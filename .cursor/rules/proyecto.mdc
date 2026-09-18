@@ -1,0 +1,16 @@
+---
+description: Reglas de trabajo del proyecto
+alwaysApply: true
+---
+
+- Antes de cualquier tarea, lee los archivos relacionados de `docs/`. Son la fuente única de verdad.
+- Si falta una decisión, PREGUNTA en rondas cortas con opciones. No asumas.
+- Nunca inventes textos comerciales, precios, especificaciones, testimonios ni imágenes. Usa `[[PENDIENTE: descripción]]` y regístralo en `docs/pendientes.md`.
+- Estilos: solo tokens de `docs/02-direccion-de-arte.md` / `globals.css`.
+- Imágenes: solo desde `src/content/assets.json` mediante `src/shared/lib/assets.ts`. Nunca URLs remotas inventadas ni imágenes sin registrar.
+- Skills: no instales skills nuevas sin mostrar fuente, qué hacen y obtener aprobación. Las fases del kit se ejecutan con `/kit-…`.
+- Motion: sigue `docs/04-motion.md` y la skill `gsap-scroll-mastery`; consulta las skills oficiales de GSAP para la API. Importa GSAP solo desde `@/shared/lib/motion/gsap`. `useGSAP` con `scope`. Anima transform, opacity y clip-path salvo justificación.
+- Todo efecto tiene variante móvil y `prefers-reduced-motion` con `gsap.matchMedia()`.
+- Arquitectura y formularios: sigue `.cursor/rules/arquitectura.mdc`.
+- No instales dependencias sin aprobación. Usa el gestor de paquetes registrado en `packageManager`.
+- Al terminar cada tarea: archivos tocados, cómo probarlo, resultado de `lint` y `typecheck`, y checklist de aceptación.

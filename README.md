@@ -1,36 +1,93 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# suparoll
 
-## Getting Started
+Base técnica del proyecto. Las especificaciones de producto, diseño y motion se definen en `docs/`.
 
-First, run the development server:
+## Stack
+
+| Tecnología | Versión |
+|---|---|
+| Next.js | 16.3.5 |
+| React | 19.2.8 |
+| TypeScript | 5.9.3 |
+| Tailwind CSS | 4.3.3 |
+| Biome | 2.4.2 |
+| GSAP | 3.15.0 |
+| Lenis | 1.3.26 |
+| React Hook Form | 7.88.0 |
+| Zod | 4.6.5 |
+| lucide-react | 1.46.0 |
+
+## Requisitos
+
+- **Node.js** >= 20.9.0 (observado: 24.19.0). Descarga: https://nodejs.org/en/download
+- **pnpm** 12.4.1 (registrado en `packageManager`). Instalación: https://pnpm.io/installation
+
+## Inicio local
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+pnpm install
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Abre la URL que imprime el servidor (por defecto http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Script | Qué hace | Modifica archivos |
+|---|---|---|
+| `pnpm dev` | Servidor de desarrollo | No |
+| `pnpm build` | Build de producción | No (genera `.next/`) |
+| `pnpm start` | Sirve el build | No |
+| `pnpm lint` | Revisa con Biome | No |
+| `pnpm format` | Formatea con Biome | Sí |
+| `pnpm typecheck` | Comprueba tipos (`tsc --noEmit`) | No |
 
-## Learn More
+## Estructura existente
 
-To learn more about Next.js, take a look at the following resources:
+```
+src/
+├─ app/                    # Rutas Next.js
+├─ features/landing/       # Secciones y escenas (vacías, con .gitkeep)
+├─ shared/
+│  ├─ components/
+│  │  ├─ layout/          # SmoothScroll
+│  │  └─ ui/forms/        # (vacío)
+│  ├─ lib/motion/         # gsap.ts — registro central de GSAP
+│  ├─ hooks/
+│  └─ validations/
+└─ content/
+public/media/              # hero, gallery, product, textures
+docs/                      # Decisiones del proyecto
+.cursor/
+├─ rules/                  # arquitectura.mdc, proyecto.mdc
+└─ skills/                 # Skills del workshop-kit
+workshop-kit/              # Kit del workshop (referencia)
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Linter y editor
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+El proyecto usa **Biome** para lint, formato y organización de imports.
 
-## Deploy on Vercel
+Recomendación de extensión: `biomejs.biome` (ver `.vscode/extensions.json`).
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Para instalarla en Cursor: abre la paleta de extensiones, busca "Biome" e instala la extensión oficial. Con `.vscode/settings.json` ya configurado, el formato al guardar funcionará automáticamente.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Guía para continuar con IA
+
+1. Lee este `README.md`, los archivos de `docs/` y las reglas en `.cursor/rules/`.
+2. Usa **pnpm** (el gestor registrado en `packageManager`).
+3. Antes de entregar cambios, ejecuta `pnpm lint` y `pnpm typecheck`.
+4. Importa GSAP solo desde `@/shared/lib/motion/gsap`.
+5. Las fases del workshop se invocan con `/kit-…` en un chat nuevo.
+6. Actualiza `docs/` cuando cambien comandos, decisiones o dependencias.
+
+## Verificación del setup (00a)
+
+- Proyecto creado en la carpeta actual (sin subcarpeta de aplicación).
+- `workshop-kit/` restaurado tras `create-next-app`.
+- Página temporal con 3 bloques de 100svh y cuadrado animado con ScrollTrigger + Lenis.
+- Skills del kit, autoskills de stack y `find-skills` instaladas (detalle en `docs/00-setup.md`).
+
+## Pendientes conocidos
+
+- **ffmpeg** no está instalado en el entorno (necesario solo para prompt 03B).

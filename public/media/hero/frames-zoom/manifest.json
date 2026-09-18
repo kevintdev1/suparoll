@@ -1,0 +1,24 @@
+{
+	"source": "assets-inbox/hero-zoom.mp4",
+	"range": {
+		"start": 0,
+		"end": 10
+	},
+	"reversed": false,
+	"background": "#e7e4da",
+	"desktop": {
+		"path": "/media/hero/frames-zoom/desktop",
+		"pattern": "%04d.webp",
+		"count": 60,
+		"width": 1920,
+		"height": 1080
+	},
+	"mobile": {
+		"path": "/media/hero/frames-zoom/mobile",
+		"pattern": "%04d.webp",
+		"count": 30,
+		"width": 960,
+		"height": 540
+	},
+	"generatedAt": "2026-09-18T00:19:50.813Z"
+}

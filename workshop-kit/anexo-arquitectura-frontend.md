@@ -1,0 +1,179 @@
+# Anexo — Arquitectura frontend y convenciones de código
+
+Documento de referencia para personas y agentes. Los prompts `00a` y `00b` lo convierten en la regla `.cursor/rules/arquitectura.mdc` del proyecto. Sirve para cualquier tipo de sitio (landing, e-commerce, portafolio, SaaS): los ejemplos usan Suparoll, pero la estructura no depende del dominio.
+
+> **Proyectos existentes:** si el proyecto ya tiene una arquitectura coherente (por ejemplo, un storefront con su propia carpeta de módulos), **se respeta la existente** y este anexo solo aplica a lo que falte. No se reorganiza código que funciona durante un workshop.
+
+## 1. Estructura
+
+```
+src/
+├─ app/                        # Rutas. Solo componen features y leen datos. Sin lógica de negocio ni animaciones.
+├─ features/                   # Un dominio o bloque funcional por carpeta
+│  ├─ landing/                 # Experiencia narrativa (Home)
+│  │  ├─ sections/             # Una sección por archivo (Hero, Gallery…). Server Components cuando sea posible
+│  │  └─ scenes/               # Escenas animadas (Client Components hoja)
+│  ├─ commerce/                # Ejemplo de dominio con datos y formularios
+│  └─ <dominio>/               # contacto, blog, cuenta, reservas…
+├─ shared/                     # Código transversal, sin conocimiento de ningún dominio
+│  ├─ components/
+│  │  ├─ ui/                   # Button, Link, Toast, RevealText, RevealImage…
+│  │  ├─ ui/forms/             # InputField, SelectField, CheckboxField…
+│  │  └─ layout/               # Navbar, Footer, SmoothScroll, PageTransition
+│  ├─ lib/
+│  │  ├─ motion/               # gsap.ts (registro), tokens.ts, media.ts, debug.ts
+│  │  └─ utils/
+│  ├─ hooks/
+│  └─ validations/             # Reglas Zod reutilizables (email, teléfono…)
+└─ content/                    # Textos y datos editoriales tipados (no JSX)
+docs/                          # Decisiones del proyecto (fuera de src/)
+```
+
+### Anatomía de un feature (crear solo las carpetas que se usen)
+
+| Carpeta | Responsabilidad | No debe |
+|---|---|---|
+| `components/` | UI específica del dominio | Llamar APIs directamente |
+| `hooks/` | Estado y lógica de interacción (incluye hooks de formulario) | Renderizar |
+| `schemas/` | Esquemas Zod de entradas y formularios | Importar React |
+| `types/` | Tipos, muchos inferidos con `z.infer`; errores de dominio | — |
+| `actions/` | Server Actions: validar con Zod → llamar a `services` → devolver resultado serializable | Contener reglas de negocio o acceso directo a datos |
+| `services/` | Reglas y orquestación; hablan con APIs/SDKs a través de una interfaz | Conocer componentes |
+| `lib/` | Adaptadores (cliente de un SDK, implementación mock) | — |
+
+**No crear capas vacías.** Una landing sin datos no necesita `services/`; un formulario de newsletter no necesita clases con inyección de dependencias. La estructura crece cuando aparece la necesidad.
+
+### Reglas de dependencia
+- `app/` → `features/` → `shared/`. Nunca al revés.
+- Un feature no importa internals de otro feature; si algo se comparte, se sube a `shared/`.
+- `shared/components/ui` recibe props estándar de HTML/React (`ButtonHTMLAttributes<HTMLButtonElement>`, etc.) y no conoce dónde se usa.
+
+## 2. Server y Client Components
+
+- Por defecto todo es Server Component.
+- `"use client"` solo cuando haya estado, efectos, eventos, refs de animación o APIs del navegador.
+- Mantén los Client Components **en las hojas**: la sección (server) obtiene contenido y lo pasa por props a la escena animada (client). Así el texto llega en el HTML inicial (SEO, sin parpadeo) y solo la parte animada se hidrata.
+
+```tsx
+// features/landing/sections/Gallery.tsx  (Server Component)
+import { galleryContent } from "@/content/home";
+import { GalleryColumns } from "../scenes/GalleryColumns";
+
+export function Gallery() {
+	return (
+		<section id="gallery" aria-labelledby="gallery-title">
+			<h2 id="gallery-title">{galleryContent.title}</h2>
+			<GalleryColumns photos={galleryContent.photos} />
+		</section>
+	);
+}
+```
+
+## 3. Motion en la arquitectura
+
+- GSAP se importa **solo** desde `@/shared/lib/motion/gsap`.
+- Cada escena usa `useGSAP(() => { ... }, { scope: ref })` y `gsap.matchMedia()` para desktop, móvil y reduced motion.
+- Selecciona elementos animados con **atributos de datos** dentro del scope (`[data-anim="title"]`), no con clases de estilo: cambiar el diseño no rompe la animación.
+- La lógica matemática reutilizable (cálculo de progreso por índice, rangos de fases) va en funciones puras dentro de `shared/lib/motion/` o `features/<dominio>/lib/`, sin tocar el DOM.
+
+## 4. Formularios
+
+Patrón en tres piezas. Aplica a newsletter, contacto, checkout, login o cualquier formulario.
+
+### 4.1 Esquema y tipos
+```ts
+// features/newsletter/schemas/subscribe.schema.ts
+import { z } from "zod";
+export const subscribeSchema = z.object({
+	email: z.email("Escribe un correo válido"),
+});
+
+// features/newsletter/types/index.ts
+export type SubscribeValues = z.infer<typeof subscribeSchema>;
+export type ActionResult = { ok: true } | { ok: false; error: string };
+```
+> La sintaxis exacta de Zod cambia entre versiones (por ejemplo `z.email()` en v4 frente a `z.string().email()` en v3). El agente debe usar la de la versión instalada.
+
+### 4.2 Input base accesible (`shared/components/ui/forms/`)
+- Incluye label, control y mensaje de error.
+- `aria-invalid` y `aria-describedby` enlazados al id del mensaje de error; el id se genera con `useId()` si no llega por props.
+- Compatible con `register` de React Hook Form: en **React 19** el componente recibe `ref` como prop normal; `forwardRef` solo si el proyecto usa React 18.
+
+```tsx
+"use client";
+import { useId, type InputHTMLAttributes, type Ref } from "react";
+
+type InputFieldProps = InputHTMLAttributes<HTMLInputElement> & {
+	label: string;
+	error?: string;
+	ref?: Ref<HTMLInputElement>;
+};
+
+export function InputField({ label, error, id, ref, ...props }: InputFieldProps) {
+	const autoId = useId();
+	const inputId = id ?? autoId;
+	const errorId = `${inputId}-error`;
+	return (
+		<div data-invalid={!!error || undefined}>
+			<label htmlFor={inputId}>{label}</label>
+			<input ref={ref} id={inputId} aria-invalid={!!error} aria-describedby={error ? errorId : undefined} {...props} />
+			{error && <p id={errorId} role="alert">{error}</p>}
+		</div>
+	);
+}
+```
+
+### 4.3 Hook de formulario (`features/<dominio>/hooks/`)
+- Crea `useForm` con `zodResolver(schema)`.
+- Define `onSubmit`: llama a la Server Action o servicio, maneja carga, éxito y error amigable (toast o mensaje).
+- Devuelve solo lo que la vista necesita.
+
+```ts
+"use client";
+export function useSubscribeForm() {
+	const form = useForm<SubscribeValues>({ resolver: zodResolver(subscribeSchema) });
+	const onSubmit = form.handleSubmit(async (values) => {
+		const result = await subscribe(values);
+		if (!result.ok) form.setError("root", { message: result.error });
+	});
+	return { register: form.register, errors: form.formState.errors, isSubmitting: form.formState.isSubmitting, onSubmit };
+}
+```
+
+### 4.4 Componente visual "tonto"
+```tsx
+"use client";
+export function SubscribeForm() {
+	const { register, errors, isSubmitting, onSubmit } = useSubscribeForm();
+	return (
+		<form onSubmit={onSubmit} noValidate>
+			<InputField label="Correo" type="email" autoComplete="email" error={errors.email?.message} {...register("email")} />
+			{errors.root && <p role="alert">{errors.root.message}</p>}
+			<Button type="submit" disabled={isSubmitting}>Suscribirme</Button>
+		</form>
+	);
+}
+```
+
+### 4.5 Server Action como pasarela
+```ts
+"use server";
+export async function subscribe(input: unknown): Promise<ActionResult> {
+	const parsed = subscribeSchema.safeParse(input);
+	if (!parsed.success) return { ok: false, error: "Revisa los datos del formulario." };
+	try {
+		await newsletterService.subscribe(parsed.data);
+		return { ok: true };
+	} catch (error) {
+		if (error instanceof NewsletterError) return { ok: false, error: error.message };
+		throw error; // errores inesperados sí deben llegar al manejo de errores de Next
+	}
+}
+```
+- Siempre valida en el servidor, aunque el cliente ya validó.
+- Errores esperados (validación, negocio) → objeto serializable. Errores inesperados → se propagan.
+
+## 5. Estilo de código
+- TypeScript estricto; sin `any` salvo justificación comentada.
+- El linter/formatter del proyecto (Biome o ESLint) decide el formato; el código generado debe pasar `lint` y `typecheck` sin desactivar reglas.
+- Un componente por archivo, nombrado en PascalCase; hooks con prefijo `use`; esquemas con sufijo `.schema.ts`.

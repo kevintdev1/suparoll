@@ -1,0 +1,24 @@
+{
+	"source": "assets-inbox/hero-turntable.mp4",
+	"range": {
+		"start": 0,
+		"end": 10
+	},
+	"reversed": false,
+	"background": "#e7e4da",
+	"desktop": {
+		"path": "/media/hero/frames/desktop",
+		"pattern": "%04d.webp",
+		"count": 120,
+		"width": 1920,
+		"height": 1080
+	},
+	"mobile": {
+		"path": "/media/hero/frames/mobile",
+		"pattern": "%04d.webp",
+		"count": 60,
+		"width": 960,
+		"height": 540
+	},
+	"generatedAt": "2026-09-18T00:18:34.794Z"
+}

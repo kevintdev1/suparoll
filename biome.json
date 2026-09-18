@@ -7,7 +7,18 @@
   },
   "files": {
     "ignoreUnknown": true,
-    "includes": ["**", "!node_modules", "!.next", "!dist", "!build"]
+    "includes": [
+      "**",
+      "!node_modules",
+      "!.next",
+      "!dist",
+      "!build",
+      "!.cursor",
+      "!.agents",
+      "!workshop-kit",
+      "!src/content/assets.json",
+      "!public/media/**/manifest.json"
+    ]
   },
   "formatter": {
     "enabled": true,
