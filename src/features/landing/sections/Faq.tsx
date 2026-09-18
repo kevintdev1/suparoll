@@ -1,6 +1,7 @@
 import { getFaqByTag } from "@/content/faq";
 import { homeContent } from "@/content/home";
 import { FaqCover } from "@/features/landing/scenes/FaqCover";
+import { Accordion } from "@/shared/components/ui/Accordion";
 import { RevealText } from "@/shared/components/ui/RevealText";
 
 export function Faq() {
@@ -24,14 +25,7 @@ export function Faq() {
           {homeContent.faq.title}
         </RevealText>
 
-        <dl className="mt-12 divide-y divide-paper-2">
-          {items.map((item) => (
-            <div key={item.id} className="py-6">
-              <dt className="font-display text-h3 text-ink">{item.question}</dt>
-              <dd className="mt-3 text-body text-ink-2">{item.answer}</dd>
-            </div>
-          ))}
-        </dl>
+        <Accordion items={items} className="mt-12" />
       </div>
 
       <div

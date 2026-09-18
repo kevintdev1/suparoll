@@ -5,6 +5,7 @@ import { type InputHTMLAttributes, type Ref, useId } from "react";
 type InputFieldProps = InputHTMLAttributes<HTMLInputElement> & {
   label: string;
   error?: string;
+  labelClassName?: string;
   ref?: Ref<HTMLInputElement>;
 };
 
@@ -14,6 +15,7 @@ export function InputField({
   id,
   ref,
   className = "",
+  labelClassName = "",
   ...props
 }: InputFieldProps) {
   const autoId = useId();
@@ -27,7 +29,7 @@ export function InputField({
     >
       <label
         htmlFor={inputId}
-        className="font-mono text-label uppercase tracking-wider text-ink-2"
+        className={`font-mono text-label uppercase tracking-wider text-ink-2 ${labelClassName}`}
       >
         {label}
       </label>

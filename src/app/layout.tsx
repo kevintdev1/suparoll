@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import { site } from "@/content/site";
 import { CartDrawer } from "@/features/commerce/components/CartDrawer";
 import { CartProvider } from "@/features/commerce/components/CartProvider";
-import { CartTrigger } from "@/features/commerce/components/CartTrigger";
+import { CustomCursor } from "@/shared/components/layout/CustomCursor";
+import { Navbar } from "@/shared/components/layout/Navbar";
+import { PageTransitionProvider } from "@/shared/components/layout/PageTransition";
 import { SmoothScroll } from "@/shared/components/layout/SmoothScroll";
 import { Grain } from "@/shared/components/ui/Grain";
 import { ToastProvider } from "@/shared/components/ui/Toast";
@@ -24,9 +26,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <Grain />
         <ToastProvider>
           <CartProvider>
-            <CartTrigger />
-            <CartDrawer />
-            <SmoothScroll>{children}</SmoothScroll>
+            <PageTransitionProvider>
+              <Navbar />
+              <CustomCursor />
+              <CartDrawer />
+              <SmoothScroll>{children}</SmoothScroll>
+            </PageTransitionProvider>
           </CartProvider>
         </ToastProvider>
       </body>

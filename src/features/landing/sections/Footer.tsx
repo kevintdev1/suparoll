@@ -1,5 +1,6 @@
 import { homeContent } from "@/content/home";
 import { site } from "@/content/site";
+import { SubscribeForm } from "@/features/newsletter/components/SubscribeForm";
 import { Link } from "@/shared/components/ui/Link";
 
 export function Footer() {
@@ -67,6 +68,7 @@ export function Footer() {
             <p className="mt-2 max-w-md text-small text-paper/50">
               {footer.newsletter.description}
             </p>
+            <SubscribeForm />
             <p className="mt-4 text-small text-paper/30">
               {site.microcopy.newsletterDemoNote}
             </p>

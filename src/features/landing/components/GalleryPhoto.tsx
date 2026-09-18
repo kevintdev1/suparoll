@@ -13,6 +13,7 @@ export function GalleryPhoto({ photo, onOpen }: GalleryPhotoProps) {
     <figure data-anim="photo" className="group relative w-full shrink-0">
       <button
         type="button"
+        data-cursor="view"
         onClick={() => onOpen(photo)}
         aria-label={photo.alt}
         className="block w-full text-left focus-visible:focus-ring"

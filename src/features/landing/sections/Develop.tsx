@@ -7,6 +7,7 @@ export function Develop() {
   return (
     <section
       id={homeContent.develop.id}
+      data-theme="dark"
       aria-labelledby="develop-title"
       className="relative z-[15] bg-ink text-paper"
     >

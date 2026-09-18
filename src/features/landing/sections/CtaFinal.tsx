@@ -1,7 +1,7 @@
-import NextLink from "next/link";
 import { homeContent } from "@/content/home";
 import { product } from "@/content/product";
 import { CtaFinalExit } from "@/features/landing/scenes/CtaFinalExit";
+import { ButtonLink } from "@/shared/components/ui/ButtonLink";
 import { RevealText } from "@/shared/components/ui/RevealText";
 
 export function CtaFinal() {
@@ -14,6 +14,7 @@ export function CtaFinal() {
   return (
     <section
       id={homeContent.ctaFinal.id}
+      data-theme="dark"
       aria-labelledby="cta-final-title"
       className="relative z-20 overflow-hidden bg-ink text-paper"
     >
@@ -34,12 +35,9 @@ export function CtaFinal() {
         </p>
 
         <div className="mt-10">
-          <NextLink
-            href={cta.href}
-            className="group relative inline-flex h-14 items-center justify-center overflow-hidden rounded-pill bg-shutter px-10 text-body font-medium text-paper transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98] focus-visible:focus-ring md:h-16 md:px-12 md:text-lead"
-          >
-            <span className="relative z-10">{cta.label}</span>
-          </NextLink>
+          <ButtonLink href={cta.href} magnetic>
+            {cta.label}
+          </ButtonLink>
         </div>
 
         <p className="mt-8 max-w-md text-small text-paper/60">{trustLabel}</p>

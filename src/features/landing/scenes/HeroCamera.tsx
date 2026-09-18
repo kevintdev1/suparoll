@@ -35,6 +35,7 @@ import {
   MOTION_MOBILE,
   MOTION_REDUCED,
 } from "@/shared/lib/motion/media";
+import { waitForPreloaderComplete } from "@/shared/lib/motion/preloader";
 import { lockScroll, unlockScroll } from "@/shared/lib/motion/scroll-lock";
 import { dur, ease, scrub, stagger } from "@/shared/lib/motion/tokens";
 
@@ -490,15 +491,28 @@ export function HeroCamera({
         const atSceneStart = () =>
           (timeline.scrollTrigger?.progress ?? 0) <= 0.001;
 
-        if (!atSceneStart()) {
-          intro.kill();
-        } else if (
-          window.scrollY <= 2 &&
-          Math.abs(stage.getBoundingClientRect().top) < 4
-        ) {
-          // La intro solo bloquea el scroll si la escena ya está arriba al cargar.
-          playIntro(true);
-        } else {
+        const scheduleIntro = async () => {
+          if (!atSceneStart()) {
+            intro.kill();
+            return;
+          }
+
+          await waitForPreloaderComplete();
+
+          if (!atSceneStart()) {
+            intro.kill();
+            return;
+          }
+
+          if (
+            window.scrollY <= 2 &&
+            Math.abs(stage.getBoundingClientRect().top) < 4
+          ) {
+            // La intro solo bloquea el scroll si la escena ya está arriba al cargar.
+            playIntro(true);
+            return;
+          }
+
           ScrollTrigger.create({
             trigger: stage,
             start: "top 65%",
@@ -509,7 +523,9 @@ export function HeroCamera({
               }
             },
           });
-        }
+        };
+
+        void scheduleIntro();
 
         let removeDebug: (() => void) | undefined;
 
@@ -592,6 +608,7 @@ export function HeroCamera({
     <section
       ref={rootRef}
       id="hero"
+      data-theme="light"
       aria-labelledby="hero-title"
       className="relative isolate"
       style={{ backgroundColor: background }}
@@ -677,7 +694,7 @@ export function HeroCamera({
           <p
             data-hero="corner"
             data-reveal
-            className="font-mono-label absolute top-6 left-[var(--margin-page)] text-ink-2"
+            className="font-mono-label absolute top-20 left-[var(--margin-page)] text-ink-2"
           >
             {cornerLabels.topLeft}
           </p>
@@ -690,6 +707,7 @@ export function HeroCamera({
           </p>
           <p
             data-hero="scroll-hint"
+            data-cursor="slide"
             data-reveal
             className="font-mono-label absolute bottom-16 left-1/2 -translate-x-1/2 text-ink-2 motion-reduce:hidden"
           >

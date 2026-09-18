@@ -1,15 +1,5 @@
-import { homeContent } from "@/content/home";
-import { SectionShell } from "./SectionShell";
+import { PreloaderScene } from "@/features/landing/scenes/PreloaderScene";
 
 export function Preloader() {
-  const { wordmark } = homeContent.preloader;
-
-  return (
-    <SectionShell
-      id={homeContent.preloader.id}
-      title="Preloader"
-      summary={`Wordmark: ${wordmark} · Contador 0–100`}
-      minHeight="min-h-[100svh]"
-    />
-  );
+  return <PreloaderScene />;
 }

@@ -4,6 +4,7 @@ import Lenis from "lenis";
 import { type ReactNode, useEffect } from "react";
 import { gsap, ScrollTrigger } from "@/shared/lib/motion/gsap";
 import { registerScroller } from "@/shared/lib/motion/scroll-lock";
+import { registerLenis } from "@/shared/lib/motion/scroller";
 
 type SmoothScrollProps = {
   children: ReactNode;
@@ -22,6 +23,7 @@ export function SmoothScroll({ children }: SmoothScrollProps) {
     const lenis = new Lenis({ autoRaf: false });
 
     lenis.on("scroll", ScrollTrigger.update);
+    registerLenis(lenis);
     registerScroller(lenis);
 
     const raf = (time: number) => {
@@ -33,6 +35,7 @@ export function SmoothScroll({ children }: SmoothScrollProps) {
 
     return () => {
       gsap.ticker.remove(raf);
+      registerLenis(null);
       registerScroller(null);
       lenis.destroy();
     };
