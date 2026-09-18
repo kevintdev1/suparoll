@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { site } from "@/content/site";
-import { PagePlaceholder } from "@/shared/components/layout/PagePlaceholder";
+import { CartPageView } from "@/features/commerce/components/CartPageView";
 
 export const metadata: Metadata = {
   title: site.seo.carrito.title,
@@ -8,10 +8,5 @@ export const metadata: Metadata = {
 };
 
 export default function CarritoPage() {
-  return (
-    <PagePlaceholder
-      title="Carrito"
-      description={`Fallback sin JavaScript. Drawer global en prompt 08. ${site.microcopy.emptyCart}`}
-    />
-  );
+  return <CartPageView />;
 }

@@ -40,6 +40,8 @@ Registro de contenido, assets y decisiones pendientes del proyecto.
 | asset-014 | Confirmar los `alt` propuestos de `hero-landscape` y `hero-landscape-mobile` en `src/content/assets.json` | usuario |
 | asset-015 | Decidir por grupo si los 23 slots en `revisar` se recortan con `process-images.mjs --crop` o se reemplazan (ratios reales no coinciden con los declarados) | usuario |
 | asset-016 | Faltan 4 fotos de galería: hay 16 y `homeContent.gallery.photoCount` declara 20 | usuario |
+| asset-019 | `alt` vacíos en `gallery-01`…`gallery-16` — fallback temporal: "Foto N de la galería" | usuario |
+| asset-020 | Captions lugar/año para hover y lightbox de galería — usa `[[PENDIENTE: lugar/año]]` | usuario |
 | asset-017 | Implementar `?debug=assets` (etiqueta con `id` y estado sobre placeholders y slots en `revisar`) | agente |
 | asset-018 | Re-extraer `frames-zoom` desde `assets-inbox/hero-zoom.mp4` si se quiere un acercamiento filmado que encadene con el final del giro | usuario |
 

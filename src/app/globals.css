@@ -300,6 +300,15 @@
     visibility: visible;
   }
 
+  .cart-dialog {
+    max-height: none;
+    max-width: none;
+  }
+
+  .cart-dialog::backdrop {
+    background: transparent;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     html.js [data-reveal] {
       visibility: visible;

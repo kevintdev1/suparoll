@@ -2,6 +2,7 @@ export type ProductVariant = {
   id: string;
   name: string;
   colorHex: string;
+  imageAssetId: string;
 };
 
 export type ProductSpecs = {
@@ -42,6 +43,7 @@ export const product: Product = {
       id: "white",
       name: "Blanco",
       colorHex: "#FFFFFF",
+      imageAssetId: "hero-camera-front",
     },
   ],
   specs: {

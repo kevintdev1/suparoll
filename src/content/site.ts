@@ -17,6 +17,20 @@ export type Microcopy = {
   emptyCartCta: string;
   paymentError: string;
   outOfStock: string;
+  inStock: string;
+  undo: string;
+  removedFromCart: string;
+  simulatePayment: string;
+  checkoutDemoNote: string;
+  orderNumber: string;
+  confirmationTitle: string;
+  confirmationEmpty: string;
+  continueExploring: string;
+  decreaseQuantity: string;
+  increaseQuantity: string;
+  closeCart: string;
+  loadingCart: string;
+  cartError: string;
   scrollLabel: string;
   notFoundTitle: string;
   notFoundBody: string;
@@ -96,6 +110,22 @@ export const site: SiteContent = {
     paymentError:
       "No pudimos procesar el pago. Revisa tus datos e inténtalo de nuevo.",
     outOfStock: "Agotado",
+    inStock: "Disponible",
+    undo: "Deshacer",
+    removedFromCart: "Eliminado del carrito",
+    simulatePayment: "Simular pago",
+    checkoutDemoNote:
+      "Modo demostración — no se procesa un pago real ni se piden datos de tarjeta.",
+    orderNumber: "Pedido",
+    confirmationTitle: "Tu pedido está en camino a revelarse",
+    confirmationEmpty:
+      "No encontramos un pedido reciente. Vuelve a la cámara para empezar de nuevo.",
+    continueExploring: "Seguir explorando",
+    decreaseQuantity: "Quitar una unidad",
+    increaseQuantity: "Añadir una unidad",
+    closeCart: "Cerrar carrito",
+    loadingCart: "Cargando carrito…",
+    cartError: "No pudimos actualizar el carrito. Inténtalo de nuevo.",
     scrollLabel: "Desliza para revelar",
     notFoundTitle: "Esta foto aún no se ha revelado",
     notFoundBody:
@@ -126,6 +156,10 @@ export const site: SiteContent = {
     checkout: {
       title: "Checkout — Suparoll",
       description: "Completa tu compra de Suparoll.",
+    },
+    confirmacion: {
+      title: "Pedido confirmado — Suparoll",
+      description: "Resumen de tu pedido simulado de Suparoll.",
     },
     soporte: {
       title: "Soporte — Suparoll",

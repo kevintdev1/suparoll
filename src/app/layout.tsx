@@ -1,7 +1,11 @@
 import type { Metadata } from "next";
 import { site } from "@/content/site";
+import { CartDrawer } from "@/features/commerce/components/CartDrawer";
+import { CartProvider } from "@/features/commerce/components/CartProvider";
+import { CartTrigger } from "@/features/commerce/components/CartTrigger";
 import { SmoothScroll } from "@/shared/components/layout/SmoothScroll";
 import { Grain } from "@/shared/components/ui/Grain";
+import { ToastProvider } from "@/shared/components/ui/Toast";
 import { fontVariables } from "@/shared/lib/fonts";
 import "./globals.css";
 
@@ -18,7 +22,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <style>{`html.js [data-reveal]{visibility:visible!important}`}</style>
         </noscript>
         <Grain />
-        <SmoothScroll>{children}</SmoothScroll>
+        <ToastProvider>
+          <CartProvider>
+            <CartTrigger />
+            <CartDrawer />
+            <SmoothScroll>{children}</SmoothScroll>
+          </CartProvider>
+        </ToastProvider>
       </body>
     </html>
   );

@@ -20,6 +20,7 @@ type TriggerMode = "scroll" | "mount";
 
 type RevealTextProps = {
   as?: TextTag;
+  id?: string;
   split?: SplitMode;
   trigger?: TriggerMode;
   delay?: number;
@@ -79,6 +80,7 @@ function getSplitTargets(splitInstance: SplitText, mode: SplitMode): Element[] {
 
 export function RevealText({
   as = "p",
+  id,
   split = "lines",
   trigger = "scroll",
   delay = 0,
@@ -266,6 +268,7 @@ export function RevealText({
         as as ElementType,
         {
           ref: textRef,
+          id,
           className,
           "data-reveal": true,
           "data-anim": "reveal-text",

@@ -1,27 +1,27 @@
 import { homeContent } from "@/content/home";
-import { SectionShell } from "./SectionShell";
+import { FeaturesStack } from "@/features/landing/scenes/FeaturesStack";
+import { RevealText } from "@/shared/components/ui/RevealText";
 
 export function Features() {
   const { title, cards } = homeContent.features;
 
   return (
-    <SectionShell
+    <section
       id={homeContent.features.id}
-      title={title}
-      minHeight="min-h-[80svh]"
+      aria-labelledby="features-title"
+      className="relative z-10 bg-paper"
     >
-      <ul className="mt-8 grid gap-6 md:grid-cols-3">
-        {cards.map((card) => (
-          <li
-            key={card.number}
-            className="rounded-lg border border-paper-2 p-6"
-          >
-            <p className="font-mono text-label text-shutter">{card.number}</p>
-            <p className="mt-2 font-display text-h3 text-ink">{card.title}</p>
-            <p className="mt-2 text-small text-ink-2">{card.body}</p>
-          </li>
-        ))}
-      </ul>
-    </SectionShell>
+      <div className="mx-auto max-w-7xl px-4 py-24 md:px-6 lg:px-8">
+        <RevealText
+          as="h2"
+          id="features-title"
+          className="mb-12 font-display text-h2 text-ink md:mb-16"
+        >
+          {title}
+        </RevealText>
+
+        <FeaturesStack cards={cards} />
+      </div>
+    </section>
   );
 }

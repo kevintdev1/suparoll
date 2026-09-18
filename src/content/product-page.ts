@@ -25,6 +25,7 @@ export type ProductPageContent = {
     warrantyLabel: string;
     quantityLabel: string;
   };
+  galleryAssetIds: string[];
 };
 
 export const productPageContent: ProductPageContent = {
@@ -69,4 +70,9 @@ export const productPageContent: ProductPageContent = {
     warrantyLabel: "[[PENDIENTE: garantía]]",
     quantityLabel: "Cantidad",
   },
+  galleryAssetIds: [
+    "hero-camera-front",
+    "hero-camera-back",
+    "specs-camera-side",
+  ],
 };

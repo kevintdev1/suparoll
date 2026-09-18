@@ -14,6 +14,7 @@ export function Social() {
           : "[[PENDIENTE: testimonios / reseñas — se ocultará en producción si vacío]]"
       }
       minHeight="min-h-[60svh]"
+      className="bg-paper"
     />
   );
 }

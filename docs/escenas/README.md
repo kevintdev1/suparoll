@@ -25,12 +25,13 @@ Ejemplo (`manifesto`):
 - IDs de sección: [`docs/03-arquitectura.md`](../03-arquitectura.md)
 - Implementación: Client Components en `src/features/landing/scenes/`, importando GSAP solo desde `@/shared/lib/motion/gsap`
 
-## Escenas pendientes
+## Escenas
 
 | ID | Prompt | Ficha |
 |---|---|---|
 | `hero` + `viewfinder` | 05 | [`hero.md`](hero.md) |
 | `preloader` | 09 | Pendiente |
-| `gallery` | 06 | Pendiente |
-| `features`, `develop`, `specs`, `cta-final`, `footer` | 07 | Pendiente |
+| `gallery` | 06 | [`gallery.md`](gallery.md) |
+| **Transiciones** | 07 | [`transiciones.md`](transiciones.md) |
+| `features`, `develop`, `specs`, `cta-final`, `footer` | 07 | En [`transiciones.md`](transiciones.md) |
 | `colors` | 08 | Pendiente |

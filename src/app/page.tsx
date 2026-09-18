@@ -1,3 +1,4 @@
+import { MainWrapper } from "@/features/landing/components/MainWrapper";
 import { Colors } from "@/features/landing/sections/Colors";
 import { CtaFinal } from "@/features/landing/sections/CtaFinal";
 import { Develop } from "@/features/landing/sections/Develop";
@@ -13,19 +14,21 @@ import { Specs } from "@/features/landing/sections/Specs";
 
 export default function Home() {
   return (
-    <main>
-      <Preloader />
-      <Hero />
-      <Manifesto />
-      <Gallery />
-      <Features />
-      <Develop />
-      <Specs />
-      <Colors />
-      <Social />
-      <Faq />
-      <CtaFinal />
+    <>
+      <MainWrapper>
+        <Preloader />
+        <Hero />
+        <Manifesto />
+        <Gallery />
+        <Features />
+        <Develop />
+        <Specs />
+        <Colors />
+        <Social />
+        <Faq />
+        <CtaFinal />
+      </MainWrapper>
       <Footer />
-    </main>
+    </>
   );
 }

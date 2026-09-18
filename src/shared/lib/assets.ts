@@ -74,9 +74,25 @@ export type Sequence = {
   mobile: SequenceVariant;
 };
 
-const slotsById = new Map(
-  assetsFileSchema.parse(assetsManifest).slots.map((slot) => [slot.id, slot]),
-);
+const parsedSlots = assetsFileSchema.parse(assetsManifest).slots;
+
+const slotsById = new Map(parsedSlots.map((slot) => [slot.id, slot]));
+
+function slotToAsset(slot: z.infer<typeof imageSlotSchema>): Asset {
+  const isPlaceholder =
+    slot.status === "placeholder" || slot.origin === "placeholder";
+
+  return {
+    id: slot.id,
+    src: slot.output,
+    width: slot.width,
+    height: slot.height,
+    alt: slot.alt,
+    blurDataURL: slot.blurDataURL,
+    isPlaceholder,
+    status: slot.status,
+  };
+}
 
 // El `manifest` del slot es una ruta en texto: los bundlers no pueden analizarla,
 // así que las secuencias se registran aquí de forma explícita.
@@ -100,19 +116,17 @@ export function getAsset(id: string): Asset {
     );
   }
 
-  const isPlaceholder =
-    slot.status === "placeholder" || slot.origin === "placeholder";
+  return slotToAsset(slot);
+}
 
-  return {
-    id: slot.id,
-    src: slot.output,
-    width: slot.width,
-    height: slot.height,
-    alt: slot.alt,
-    blurDataURL: slot.blurDataURL,
-    isPlaceholder,
-    status: slot.status,
-  };
+export function getAssetsByGroup(group: string): Asset[] {
+  return parsedSlots
+    .filter(
+      (slot): slot is z.infer<typeof imageSlotSchema> =>
+        !("type" in slot) && slot.group === group,
+    )
+    .map(slotToAsset)
+    .sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }));
 }
 
 export function getSequence(id: string): Sequence {
