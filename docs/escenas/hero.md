@@ -23,7 +23,7 @@ Escena de apertura de la Home. Cubre las secciones `hero` y `viewfinder` de [`do
 | Desktop | 120 frames, 1920×1080, `/media/hero/frames/desktop/%04d.webp` |
 | Móvil | 60 frames, 960×540, `/media/hero/frames/mobile/%04d.webp` |
 | Fondo de la escena | `#e7e4da` (color muestreado del video, ver [`docs/assets.md`](../assets.md)) |
-| Recorrido del giro | Frames 1 → 120 completos: de la vista frontal a la trasera 3/4, con el ocular visible |
+| Recorrido del giro | Frames 1 → 97 (`turnEndRatio: 0.81`): de la vista frontal a la trasera recta. Los frames siguientes giran de más y no se usan |
 
 `hero-sequence-zoom` **no se usa**: arranca otra vez en la vista frontal y entra por la ventana frontal del visor, así que encadenarla tras el giro daría un salto de trasera a frontal. El acercamiento de F2 se hace escalando el canvas con `transform-origin` en el ocular trasero.
 
@@ -48,7 +48,7 @@ Timeline único con pin y `scrub: scrub.scene`. Duración total: `+=450%` de la 
 | Fase | Progreso | Término | Qué ocurre |
 |---|---|---|---|
 | **F0 Intro** | por tiempo, antes del scroll | Split-text (chars) + scale + fade | Las letras de SUPAROLL suben desde máscara con `stagger.chars` y `ease.reveal`; 0.3s después la cámara frontal pasa de `scale .92 / opacity 0` a `1 / 1`; aparecen los labels y "Desliza para revelar" |
-| **F1 Giro** | 0.00 → 0.30 | Scrubbing de frames | El canvas avanza del frame 1 al 120. El wordmark se desplaza en X (`xPercent: -14`) y baja su opacidad a 0.15. El label de scroll desaparece al 5% |
+| **F1 Giro** | 0.00 → 0.30 | Scrubbing de frames | El canvas avanza del frame 1 al de la trasera recta (`turnEndRatio`) y el acercamiento empieza con la cámara de frente. El wordmark se desplaza en X (`xPercent: -14`) y baja su opacidad a 0.15. El label de scroll desaparece al 5% |
 | **F2 Acercamiento** | 0.30 → 0.55 | Zoom con foco en el ocular | El encaje del frame se recalcula cada tick: el zoom sube hasta que el ocular ocupa el 32% del alto del viewport y el punto focal viaja del centro de la cámara al centro del `viewfinderRect`. Labels de esquina y wordmark se desvanecen |
 | **F3 A través del visor** | 0.55 → 0.70 | Clip-path anclado al ocular | El paisaje aparece **dentro** del ocular: el `clip-path: inset()` se recalcula desde la proyección del `viewfinderRect`, así que la ventana queda pegada al hueco real mientras la cámara sigue avanzando (`exitZoomFactor` 1.5). La imagen interior va de `scale 1.4` a `1.12` |
 | **F4 Paisaje a sangre** | 0.70 → 0.85 | Clip-path → full-bleed | El recorte interpola del ocular a `inset(0 0 0 0 round 0)`; la imagen interior termina en `scale 1`; la capa de cámara se desvanece por detrás. En la segunda mitad entra el overlay "El mundo, tal como lo ves" por líneas |
@@ -66,7 +66,7 @@ Si se recarga con la escena ya avanzada, la intro se descarta: sus `from()` devo
 
 ### Pie de foto
 
-El texto del overlay vive en un marco (`[data-hero="overlay-frame"]`) cuyo `left/top/width/height` se iguala en cada cambio al rectángulo visible del recorte. De lo contrario el pie se corta por el borde del `clip-path` mientras la ventana se abre y, al final, contra el borde de la tarjeta. Su ancho es propio (`w-[min(18ch,72vw)] shrink-0`) para que `SplitText` mida las líneas sobre el ancho definitivo y no sobre el tamaño del ocular.
+El texto del overlay vive en un marco (`[data-hero="overlay-frame"]`) a tamaño completo que se desplaza con `translate3d` para anclarse a la esquina inferior izquierda del recorte visible. De lo contrario el pie se corta por el borde del `clip-path` mientras la ventana se abre y, al final, contra el borde de la tarjeta. Su ancho es propio (`w-[min(18ch,72vw)] shrink-0`) para que `SplitText` mida las líneas sobre el ancho definitivo y no sobre el tamaño del ocular.
 
 ## Datos medidos
 
@@ -75,7 +75,7 @@ Ambos rectángulos están en [`src/content/hero.ts`](../../src/content/hero.ts),
 | Dato | Valor | Cómo se obtuvo |
 |---|---|---|
 | `cameraBox` | `x .245  y .26  w .515  h .645` | Unión de la silueta detectada en 9 frames del giro, descartando la sombra proyectada. Sirve para encajar la cámara en el viewport |
-| `viewfinderRect` | `x .502  y .316  w .034  h .100` | Hueco oscuro del ocular trasero sobre el último frame del giro, ajustado con `?debug=hero` hasta que la caja cae dentro del hueco y no sobre la goma |
+| `viewfinderRect` | `x .370  y .333  w .042  h .060` | Hueco oscuro del ocular trasero sobre el frame 97 (trasera recta), ajustado hasta que la caja cae dentro del hueco y no sobre la goma |
 | `viewfinderTargetHeight` | `0.32` | Alto del ocular al final de F2, en fracción del viewport. Por encima de ~0.36 el frame se ve blando al ampliarlo |
 
 `?debug=hero` dibuja sobre el canvas la caja proyectada del ocular (rojo) y la de la cámara (amarillo), y registra en consola las coordenadas 0–1 de cada clic más el `viewfinderRect` resultante. Los valores no se estiman a ojo.
@@ -102,7 +102,7 @@ Línea de progreso de 2px en el borde inferior (`scaleX` de 0 a 1, color `--colo
 
 - Precarga progresiva: primero cada 4º frame para poder dibujar algo pronto, después el resto, con concurrencia limitada. El progreso real se expone para el preloader del prompt 09.
 - Mientras falta un frame se dibuja el más cercano ya cargado, así el giro nunca se queda en blanco.
-- `devicePixelRatio` limitado a 2. El frame se dibuja encajando `cameraBox` en el viewport y estirando los píxeles del borde para cubrir el resto, porque el fondo del video es un degradado y un color plano se notaría.
+- `devicePixelRatio` limitado a 2 en desktop y móvil, con suavizado `high`. El frame se dibuja encajando `cameraBox` en el viewport y estirando los píxeles del borde para cubrir el resto, porque el fondo del video es un degradado y un color plano se notaría.
 - Se redibuja solo si cambió el índice entero del frame, el zoom o el punto focal.
 - Solo se animan `transform`, `opacity` y `clip-path`.
 - `ScrollTrigger.refresh()` una vez cuando termina la precarga inicial, nunca por frame.

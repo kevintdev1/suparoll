@@ -124,7 +124,7 @@ Fuente única de verdad para preloader, navbar, cursor, botones, acordeón FAQ, 
 | Ruta | Rol |
 |---|---|
 | `src/shared/lib/motion/preloader.ts` | Sesión y eventos preloader |
-| `src/shared/lib/motion/preloader-progress.ts` | Progreso real de carga |
+| `src/features/landing/lib/preloader-progress.ts` | Progreso real de carga |
 | `src/shared/lib/motion/navigation-cleanup.ts` | Kill ST, scroll top, foco |
 | `src/shared/lib/motion/scroller.ts` | Instancia Lenis compartida |
 | `src/features/landing/scenes/PreloaderScene.tsx` | Escena preloader |
