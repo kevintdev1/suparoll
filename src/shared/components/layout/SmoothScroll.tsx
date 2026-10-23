@@ -3,6 +3,8 @@
 import Lenis from "lenis";
 import { type ReactNode, useEffect } from "react";
 import { gsap, ScrollTrigger } from "@/shared/lib/motion/gsap";
+import { refreshOnLayoutChange } from "@/shared/lib/motion/layout-refresh";
+import { MOTION_REDUCED } from "@/shared/lib/motion/media";
 import { registerScroller } from "@/shared/lib/motion/scroll-lock";
 import { registerLenis } from "@/shared/lib/motion/scroller";
 
@@ -10,35 +12,36 @@ type SmoothScrollProps = {
   children: ReactNode;
 };
 
-export function SmoothScroll({ children }: SmoothScrollProps) {
-  useEffect(() => {
-    const prefersReducedMotion = window.matchMedia(
-      "(prefers-reduced-motion: reduce)",
-    ).matches;
+function createLenis(): () => void {
+  const lenis = new Lenis({ autoRaf: false, syncTouch: true });
+  const raf = (time: number) => lenis.raf(time * 1000);
+  const resize = () => lenis.resize();
 
-    if (prefersReducedMotion) {
+  lenis.on("scroll", ScrollTrigger.update);
+  ScrollTrigger.addEventListener("refresh", resize);
+  registerLenis(lenis);
+  registerScroller(lenis);
+  gsap.ticker.add(raf);
+  gsap.ticker.lagSmoothing(0);
+
+  return () => {
+    gsap.ticker.remove(raf);
+    ScrollTrigger.removeEventListener("refresh", resize);
+    registerLenis(null);
+    registerScroller(null);
+    lenis.destroy();
+  };
+}
+
+export function SmoothScroll({ children }: SmoothScrollProps) {
+  useEffect(() => refreshOnLayoutChange(document.body), []);
+
+  useEffect(() => {
+    if (window.matchMedia(MOTION_REDUCED).matches) {
       return;
     }
 
-    const lenis = new Lenis({ autoRaf: false });
-
-    lenis.on("scroll", ScrollTrigger.update);
-    registerLenis(lenis);
-    registerScroller(lenis);
-
-    const raf = (time: number) => {
-      lenis.raf(time * 1000);
-    };
-
-    gsap.ticker.add(raf);
-    gsap.ticker.lagSmoothing(0);
-
-    return () => {
-      gsap.ticker.remove(raf);
-      registerLenis(null);
-      registerScroller(null);
-      lenis.destroy();
-    };
+    return createLenis();
   }, []);
 
   return children;

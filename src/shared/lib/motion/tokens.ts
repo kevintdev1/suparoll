@@ -1,5 +1,3 @@
-"use client";
-
 import { CustomEase } from "@/shared/lib/motion/gsap";
 
 if (typeof window !== "undefined") {

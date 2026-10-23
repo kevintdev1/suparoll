@@ -1,17 +1,18 @@
-"use client";
-
 import { ScrollTrigger } from "@/shared/lib/motion/gsap";
 import { scrollToTop } from "@/shared/lib/motion/scroller";
 
-export function killPageScrollTriggers(): number {
-  const triggers = ScrollTrigger.getAll();
-  const count = triggers.length;
-
-  for (const trigger of triggers) {
+export function killPageScrollTriggers(): void {
+  for (const trigger of ScrollTrigger.getAll()) {
     trigger.kill();
   }
+}
 
-  return count;
+export function killDetachedScrollTriggers(): void {
+  for (const trigger of ScrollTrigger.getAll()) {
+    if (trigger.trigger && !trigger.trigger.isConnected) {
+      trigger.kill();
+    }
+  }
 }
 
 export function resetScroll(): void {

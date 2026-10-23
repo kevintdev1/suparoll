@@ -1,5 +1,3 @@
-"use client";
-
 type SmoothScroller = {
   start: () => void;
   stop: () => void;
@@ -12,22 +10,35 @@ export function registerScroller(instance: SmoothScroller | null): void {
   scroller = instance;
 }
 
-export function lockScroll(): void {
+function acquire(): void {
   locks += 1;
 
   if (locks === 1) {
     scroller?.stop();
+    document.documentElement.style.overflow = "hidden";
   }
 }
 
-export function unlockScroll(): void {
-  if (locks === 0) {
-    return;
-  }
-
-  locks -= 1;
+function release(): void {
+  locks = Math.max(0, locks - 1);
 
   if (locks === 0) {
     scroller?.start();
+    document.documentElement.style.overflow = "";
   }
+}
+
+export function lockScroll(): () => void {
+  let released = false;
+
+  acquire();
+
+  return () => {
+    if (released) {
+      return;
+    }
+
+    released = true;
+    release();
+  };
 }

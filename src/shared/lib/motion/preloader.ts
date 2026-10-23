@@ -1,5 +1,3 @@
-"use client";
-
 export const PRELOADER_SESSION_KEY = "suparoll:preloader-seen";
 export const PRELOADER_COMPLETE_EVENT = "suparoll:preloader-complete";
 
@@ -18,9 +16,7 @@ export function hasSeenPreloader(): boolean {
 export function markPreloaderSeen(): void {
   try {
     sessionStorage.setItem(PRELOADER_SESSION_KEY, "1");
-  } catch {
-    // sessionStorage puede fallar en modo privado
-  }
+  } catch {}
 }
 
 export function dispatchPreloaderComplete(): void {

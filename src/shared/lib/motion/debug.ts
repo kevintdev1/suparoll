@@ -1,4 +1,4 @@
-function getDebugFlag(): string | null {
+export function getDebugFlag(): string | null {
   if (typeof window === "undefined") {
     return null;
   }
@@ -12,12 +12,4 @@ export function getDebugMotion(): boolean {
 
 export function getDebugHero(): boolean {
   return getDebugFlag() === "hero";
-}
-
-export function getDebugSoldOut(): boolean {
-  return getDebugFlag() === "agotado";
-}
-
-export function getDebugCartError(): boolean {
-  return getDebugFlag() === "cart-error";
 }

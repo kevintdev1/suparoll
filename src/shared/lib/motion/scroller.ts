@@ -1,5 +1,3 @@
-"use client";
-
 import type Lenis from "lenis";
 
 let lenisInstance: Lenis | null = null;
@@ -20,5 +18,5 @@ export function scrollToTop(options?: { immediate?: boolean }): void {
     return;
   }
 
-  window.scrollTo({ top: 0, behavior: immediate ? "auto" : "smooth" });
+  window.scrollTo({ top: 0, behavior: immediate ? "instant" : "smooth" });
 }
