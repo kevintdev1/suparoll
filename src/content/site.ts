@@ -9,32 +9,12 @@ export type SeoEntry = {
 };
 
 export type Microcopy = {
-  addToCart: string;
-  added: string;
-  viewCart: string;
-  checkout: string;
-  emptyCart: string;
-  emptyCartCta: string;
-  paymentError: string;
-  outOfStock: string;
-  inStock: string;
-  undo: string;
-  removedFromCart: string;
-  simulatePayment: string;
-  checkoutDemoNote: string;
-  orderNumber: string;
-  confirmationTitle: string;
-  confirmationEmpty: string;
-  continueExploring: string;
-  decreaseQuantity: string;
-  increaseQuantity: string;
-  closeCart: string;
-  loadingCart: string;
-  cartError: string;
+  dismissToast: string;
   scrollLabel: string;
   notFoundTitle: string;
   notFoundBody: string;
   notFoundCta: string;
+  newsletterLabel: string;
   newsletterPlaceholder: string;
   newsletterSubmit: string;
   newsletterSuccess: string;
@@ -58,10 +38,17 @@ export type FooterContent = {
 export type SiteContent = {
   brand: string;
   tagline: string;
+  skipToContent: string;
   navbar: {
     links: NavLink[];
-    cartLabel: string;
+    primaryNavLabel: string;
+    mobileNavLabel: string;
+    menuLabel: string;
+    openMenu: string;
+    closeMenu: string;
   };
+  pageLabels: Record<string, string>;
+  cursorLabels: Record<string, string>;
   footer: FooterContent;
   microcopy: Microcopy;
   seo: Record<string, SeoEntry>;
@@ -71,12 +58,35 @@ export const site: SiteContent = {
   brand: "Suparoll",
   tagline: "Cada instante, se revela",
 
+  skipToContent: "Saltar al contenido",
+
   navbar: {
     links: [
       { label: "Cámara", href: "/camara" },
       { label: "Soporte", href: "/soporte" },
     ],
-    cartLabel: "Carrito",
+    primaryNavLabel: "Principal",
+    mobileNavLabel: "Menú móvil",
+    menuLabel: "Menú de navegación",
+    openMenu: "Abrir menú",
+    closeMenu: "Cerrar menú",
+  },
+
+  pageLabels: {
+    "/": "Inicio",
+    "/camara": "Cámara",
+    "/carrito": "Carrito",
+    "/checkout": "Checkout",
+    "/checkout/confirmacion": "Confirmación",
+    "/soporte": "Soporte",
+    "/legal/privacidad": "Privacidad",
+    "/legal/terminos": "Términos",
+  },
+
+  cursorLabels: {
+    view: "Ver",
+    drag: "Arrastra",
+    slide: "Desliza",
   },
 
   footer: {
@@ -96,41 +106,21 @@ export const site: SiteContent = {
       description:
         "Un correo de vez en cuando. Sin spam, solo lo esencial sobre Suparoll.",
     },
-    social: null,
+    social: [
+      { label: "Instagram", href: "https://instagram.com/suparoll" },
+      { label: "TikTok", href: "https://tiktok.com/@suparoll" },
+    ],
     copyright: "© Suparoll",
   },
 
   microcopy: {
-    addToCart: "Añadir al carrito",
-    added: "Añadido",
-    viewCart: "Ver carrito",
-    checkout: "Ir a pagar",
-    emptyCart: "Tu carrito está vacío. Explora la cámara y guarda tu favorita.",
-    emptyCartCta: "Ver la cámara",
-    paymentError:
-      "No pudimos procesar el pago. Revisa tus datos e inténtalo de nuevo.",
-    outOfStock: "Agotado",
-    inStock: "Disponible",
-    undo: "Deshacer",
-    removedFromCart: "Eliminado del carrito",
-    simulatePayment: "Simular pago",
-    checkoutDemoNote:
-      "Modo demostración — no se procesa un pago real ni se piden datos de tarjeta.",
-    orderNumber: "Pedido",
-    confirmationTitle: "Tu pedido está en camino a revelarse",
-    confirmationEmpty:
-      "No encontramos un pedido reciente. Vuelve a la cámara para empezar de nuevo.",
-    continueExploring: "Seguir explorando",
-    decreaseQuantity: "Quitar una unidad",
-    increaseQuantity: "Añadir una unidad",
-    closeCart: "Cerrar carrito",
-    loadingCart: "Cargando carrito…",
-    cartError: "No pudimos actualizar el carrito. Inténtalo de nuevo.",
+    dismissToast: "Cerrar aviso",
     scrollLabel: "Desliza para revelar",
     notFoundTitle: "Esta foto aún no se ha revelado",
     notFoundBody:
       "La página que buscas no existe o se movió. Vuelve al inicio y sigue explorando.",
     notFoundCta: "Volver al inicio",
+    newsletterLabel: "Correo electrónico",
     newsletterPlaceholder: "Tu correo",
     newsletterSubmit: "Suscribirme",
     newsletterSuccess: "¡Listo!",

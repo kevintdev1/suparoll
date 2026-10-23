@@ -31,6 +31,7 @@ export type HeroScene = {
   viewfinderRect: NormalizedRect;
   viewfinderRadiusRatio: number;
   viewfinderTargetHeight: number;
+  turnEndRatio: number;
   zoomMax: number;
   exitZoomFactor: number;
   phases: HeroPhases;
@@ -43,11 +44,12 @@ export const heroScene: HeroScene = {
   // Unión de la silueta de la cámara en 9 frames del giro, sin la sombra proyectada.
   cameraBox: { x: 0.245, y: 0.26, width: 0.515, height: 0.645 },
 
-  // Hueco oscuro del ocular trasero, medido sobre el último frame del giro.
-  viewfinderRect: { x: 0.502, y: 0.316, width: 0.034, height: 0.1 },
+  // Hueco oscuro del ocular trasero, medido sobre el frame 97 (trasera recta).
+  viewfinderRect: { x: 0.37, y: 0.333, width: 0.042, height: 0.06 },
   viewfinderRadiusRatio: 0.12,
   viewfinderTargetHeight: 0.32,
 
+  turnEndRatio: 0.81,
   zoomMax: 5,
   exitZoomFactor: 1.5,
 

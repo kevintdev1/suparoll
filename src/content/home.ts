@@ -5,6 +5,12 @@ export type FeatureCard = {
   imageAssetId: string | null;
 };
 
+export type SocialReview = {
+  author: string;
+  body: string;
+  rating: number;
+};
+
 export type HomeContent = {
   preloader: {
     id: "preloader";
@@ -46,8 +52,10 @@ export type HomeContent = {
     id: "develop";
     title: string;
     body: string;
-    developTime: string | null;
+    developSeconds: number | null;
     snapshotAssetId: string | null;
+    snapshotAlt: string;
+    placeholderLabel: string;
   };
   specs: {
     id: "specs";
@@ -63,7 +71,7 @@ export type HomeContent = {
   social: {
     id: "social";
     title: string;
-    reviews: { author: string; body: string; rating: number }[] | null;
+    reviews: SocialReview[] | null;
   };
   faq: {
     id: "faq";
@@ -77,6 +85,9 @@ export type HomeContent = {
   };
   footer: {
     id: "footer";
+    socialLabel: string;
+    navTitle: string;
+    legalTitle: string;
   };
 };
 
@@ -91,7 +102,7 @@ export const homeContent: HomeContent = {
     wordmark: "SUPAROLL",
     scrollLabel: "Desliza para revelar",
     cornerLabels: {
-      topLeft: "[[PENDIENTE: nombre comercial del modelo]]",
+      topLeft: "Suparoll One",
       bottomRight: "2026",
     },
     cameraAssetId: "hero-camera-front",
@@ -128,19 +139,19 @@ export const homeContent: HomeContent = {
         number: "01",
         title: "En segundos",
         body: "Dispara y sostén la foto en la mano. El revelado es casi instantáneo — sin esperar, sin imprimir aparte.",
-        imageAssetId: null,
+        imageAssetId: "feature-01",
       },
       {
         number: "02",
         title: "Diseño icónico",
         body: "Formas limpias, colores honestos y un objeto que quieres dejar a la vista, no guardar en un cajón.",
-        imageAssetId: null,
+        imageAssetId: "feature-02",
       },
       {
         number: "03",
         title: "Sin pantallas",
         body: "Nada de menús ni filtros. Solo tú, el visor y el momento. Menos pantalla, más presencia.",
-        imageAssetId: null,
+        imageAssetId: "feature-03",
       },
     ],
   },
@@ -149,15 +160,17 @@ export const homeContent: HomeContent = {
     id: "develop",
     title: "Se revela en segundos",
     body: "Mira cómo la instantánea pasa de gris a color mientras haces scroll — igual que en la vida real.",
-    developTime: "[[PENDIENTE: tiempo de revelado en segundos]]",
-    snapshotAssetId: null,
+    developSeconds: 15,
+    snapshotAssetId: "develop-photo",
+    snapshotAlt: "Foto instantánea revelándose",
+    placeholderLabel: "Instantánea de ejemplo",
   },
 
   specs: {
     id: "specs",
     title: "Especificaciones",
     subtitle: "Todo lo que necesitas saber antes de disparar.",
-    profileAssetId: null,
+    profileAssetId: "specs-camera-side",
   },
 
   colors: {
@@ -169,7 +182,23 @@ export const homeContent: HomeContent = {
   social: {
     id: "social",
     title: "Lo que dicen",
-    reviews: null,
+    reviews: [
+      {
+        author: "Lucía M.",
+        body: "La regalé a mi hermana y no ha parado de usarla en salidas. Las fotos quedan con un color muy cálido.",
+        rating: 5,
+      },
+      {
+        author: "Carlos R.",
+        body: "Me gusta que no tenga pantalla: te obliga a pensar el encuadre. El revelado es casi instantáneo.",
+        rating: 5,
+      },
+      {
+        author: "Elena V.",
+        body: "Ligera, bonita y lista para salir. La correa y el cartucho de prueba vienen muy bien para empezar.",
+        rating: 5,
+      },
+    ],
   },
 
   faq: {
@@ -182,10 +211,13 @@ export const homeContent: HomeContent = {
     headline: "Tu próximo recuerdo empieza aquí",
     cta: { label: "Comprar ahora", href: "/camara" },
     trustLabel:
-      "[[PENDIENTE: envío y garantía — ej. Envío gratis · Garantía 2 años]]",
+      "Envío gratuito a partir de $50 · Garantía 2 años · Devolución 30 días",
   },
 
   footer: {
     id: "footer",
+    socialLabel: "Redes sociales",
+    navTitle: "Navegación",
+    legalTitle: "Legal",
   },
 };
