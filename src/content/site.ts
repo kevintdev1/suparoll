@@ -107,8 +107,8 @@ export const site: SiteContent = {
         "Un correo de vez en cuando. Sin spam, solo lo esencial sobre Suparoll.",
     },
     social: [
-      { label: "Instagram", href: "https://instagram.com/suparoll" },
-      { label: "TikTok", href: "https://tiktok.com/@suparoll" },
+      { label: "Instagram", href: "https://kevint.dev" },
+      { label: "TikTok", href: "https://kevint.dev" },
     ],
     copyright: "© Suparoll",
   },
