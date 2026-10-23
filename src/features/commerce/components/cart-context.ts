@@ -2,21 +2,15 @@
 
 import { createContext } from "react";
 import type { CheckoutValues } from "@/features/commerce/schemas/checkout.schema";
-import type {
-  Cart,
-  CartLine,
-  LastAdded,
-  SimulatedOrder,
-} from "@/features/commerce/types";
+import type { Cart, CartLine, SimulatedOrder } from "@/features/commerce/types";
 
-export type CartStatus = "loading" | "ready" | "error";
+export type CartStatus = "ready" | "error";
 
 export type CartContextValue = {
   cart: Cart;
   status: CartStatus;
   error: string | null;
   isOpen: boolean;
-  lastAdded: LastAdded | null;
   openCart: () => void;
   closeCart: () => void;
   toggleCart: () => void;

@@ -1,18 +1,16 @@
 "use client";
 
 import Image from "next/image";
-import { useRef, useState } from "react";
-import { site } from "@/content/site";
+import { useEffect, useRef, useState } from "react";
+import { commerceContent } from "@/content/commerce";
 import { useCart } from "@/features/commerce/hooks/useCart";
 import { Button } from "@/shared/components/ui/Button";
 import { getAsset } from "@/shared/lib/assets";
-import { Flip, gsap, useGSAP } from "@/shared/lib/motion/gsap";
-import {
-  MOTION_DESKTOP,
-  MOTION_MOBILE,
-  MOTION_REDUCED,
-} from "@/shared/lib/motion/media";
+import { Flip, gsap } from "@/shared/lib/motion/gsap";
+import { MOTION_REDUCED } from "@/shared/lib/motion/media";
 import { dur, ease } from "@/shared/lib/motion/tokens";
+
+const ADDED_FEEDBACK_MS = 1600;
 
 type AddToCartButtonProps = {
   variantId: string;
@@ -29,38 +27,25 @@ export function AddToCartButton({
 }: AddToCartButtonProps) {
   const { addToCart, openCart } = useCart();
   const [added, setAdded] = useState(false);
-  const rootRef = useRef<HTMLDivElement>(null);
   const flyRef = useRef<HTMLDivElement>(null);
-  const reduceMotionRef = useRef(false);
   const image = getAsset(imageAssetId);
+  const copy = commerceContent.product;
 
-  useGSAP(
-    () => {
-      const mm = gsap.matchMedia();
+  useEffect(() => {
+    if (!added) {
+      return;
+    }
 
-      mm.add(MOTION_REDUCED, () => {
-        reduceMotionRef.current = true;
-      });
-
-      mm.add(MOTION_DESKTOP, () => {
-        reduceMotionRef.current = false;
-      });
-
-      mm.add(MOTION_MOBILE, () => {
-        reduceMotionRef.current = false;
-      });
-
-      return () => mm.revert();
-    },
-    { scope: rootRef },
-  );
+    const timer = window.setTimeout(() => setAdded(false), ADDED_FEEDBACK_MS);
+    return () => window.clearTimeout(timer);
+  }, [added]);
 
   const flyToCart = () => {
     const source = flyRef.current;
     const target = document.querySelector<HTMLElement>("[data-cart-icon]");
     const count = document.querySelector<HTMLElement>("[data-cart-count]");
 
-    if (!source || !target || reduceMotionRef.current) {
+    if (!source || !target || window.matchMedia(MOTION_REDUCED).matches) {
       return;
     }
 
@@ -117,7 +102,7 @@ export function AddToCartButton({
   };
 
   return (
-    <div ref={rootRef} className="relative">
+    <div className="relative">
       <div
         ref={flyRef}
         data-anim="fly-thumb"
@@ -134,30 +119,16 @@ export function AddToCartButton({
       <Button
         className="w-full"
         disabled={!available}
-        aria-disabled={!available}
         onClick={() => {
-          if (!available) {
-            return;
+          if (addToCart(variantId, quantity)) {
+            setAdded(true);
+            flyToCart();
           }
 
-          const ok = addToCart(variantId, quantity);
-
-          if (!ok) {
-            openCart();
-            return;
-          }
-
-          setAdded(true);
-          flyToCart();
           openCart();
-          window.setTimeout(() => setAdded(false), 1600);
         }}
       >
-        {!available
-          ? site.microcopy.outOfStock
-          : added
-            ? site.microcopy.added
-            : site.microcopy.addToCart}
+        {!available ? copy.outOfStock : added ? copy.added : copy.addToCart}
       </Button>
     </div>
   );

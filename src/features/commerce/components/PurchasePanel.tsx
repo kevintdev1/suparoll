@@ -1,18 +1,22 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
-import { site } from "@/content/site";
+import { useId, useState } from "react";
+import { commerceContent } from "@/content/commerce";
 import { AddToCartButton } from "@/features/commerce/components/AddToCartButton";
 import { PriceTag } from "@/features/commerce/components/PriceTag";
+import { QuantityStepper } from "@/features/commerce/components/QuantityStepper";
 import { VariantPicker } from "@/features/commerce/components/VariantPicker";
-import type { CommerceProduct } from "@/features/commerce/types";
-import { getDebugSoldOut } from "@/shared/lib/motion/debug";
+import { useVariantAvailable } from "@/features/commerce/hooks/useVariantAvailable";
+import type {
+  CommerceProduct,
+  CommerceVariant,
+} from "@/features/commerce/types";
 
 type PurchasePanelProps = {
   product: CommerceProduct;
   shippingLabel: string;
   warrantyLabel: string;
-  quantityLabel?: string;
+  headingLevel?: "h1" | "h2" | "h3";
   showQuantity?: boolean;
   selectedVariantId?: string;
   onVariantChange?: (id: string) => void;
@@ -23,31 +27,18 @@ type PurchasePanelProps = {
 
 export function PurchasePanel({
   product,
-  shippingLabel,
-  warrantyLabel,
-  quantityLabel,
-  showQuantity = false,
+  headingLevel = "h3",
   selectedVariantId,
   onVariantChange,
   quantity: quantityProp,
   onQuantityChange,
-  ctaRef,
+  ...props
 }: PurchasePanelProps) {
-  const variantLabelId = useId();
   const [internalVariantId, setInternalVariantId] = useState(
     product.variants[0]?.id ?? "",
   );
   const [internalQuantity, setInternalQuantity] = useState(1);
-  const [soldOut, setSoldOut] = useState(false);
-
-  useEffect(() => {
-    setSoldOut(getDebugSoldOut());
-  }, []);
-
   const variantId = selectedVariantId ?? internalVariantId;
-  const setVariantId = onVariantChange ?? setInternalVariantId;
-  const quantity = quantityProp ?? internalQuantity;
-  const setQuantity = onQuantityChange ?? setInternalQuantity;
   const variant =
     product.variants.find((item) => item.id === variantId) ??
     product.variants[0];
@@ -56,72 +47,88 @@ export function PurchasePanel({
     return null;
   }
 
-  const available = variant.available && !soldOut;
-  const displayName =
-    product.model ?? "[[PENDIENTE: nombre comercial del modelo]]";
+  return (
+    <PurchasePanelContent
+      {...props}
+      product={product}
+      variant={variant}
+      headingLevel={headingLevel}
+      onVariantChange={onVariantChange ?? setInternalVariantId}
+      quantity={quantityProp ?? internalQuantity}
+      onQuantityChange={onQuantityChange ?? setInternalQuantity}
+    />
+  );
+}
+
+type PurchasePanelContentProps = Omit<
+  PurchasePanelProps,
+  "selectedVariantId" | "headingLevel" | "quantity" | "onQuantityChange"
+> & {
+  variant: CommerceVariant;
+  headingLevel: "h1" | "h2" | "h3";
+  onVariantChange: (id: string) => void;
+  quantity: number;
+  onQuantityChange: (quantity: number) => void;
+};
+
+function PurchasePanelContent({
+  product,
+  variant,
+  shippingLabel,
+  warrantyLabel,
+  headingLevel: Heading,
+  showQuantity = false,
+  onVariantChange,
+  quantity,
+  onQuantityChange,
+  ctaRef,
+}: PurchasePanelContentProps) {
+  const variantLabelId = useId();
+  const available = useVariantAvailable(variant);
+  const displayName = product.model ?? product.brand;
+  const copy = commerceContent.product;
 
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <p className="font-mono text-label uppercase tracking-wider text-ink-2">
-          {product.brand}
-        </p>
-        <p className="mt-2 font-display text-h3 text-ink">{displayName}</p>
+        <p className="font-mono-label text-ink-2">{product.brand}</p>
+        <Heading
+          data-page-title={Heading === "h1" ? true : undefined}
+          className="mt-2 font-display text-h3 text-ink"
+        >
+          {displayName}
+        </Heading>
         <PriceTag
           price={product.price}
           currency={product.currency}
           className="mt-4"
         />
-        <p className="mt-2 font-mono text-label uppercase tracking-wider text-ink-2">
-          {available ? site.microcopy.inStock : site.microcopy.outOfStock}
+        <p className="mt-2 font-mono-label text-ink-2">
+          {available ? copy.inStock : copy.outOfStock}
         </p>
       </div>
 
       <div>
-        <p
-          id={variantLabelId}
-          className="mb-3 font-mono text-label uppercase tracking-wider text-ink-2"
-        >
-          Color
+        <p id={variantLabelId} className="mb-3 font-mono-label text-ink-2">
+          {copy.colorLabel}
         </p>
         <VariantPicker
           variants={product.variants}
           value={variant.id}
-          onChange={setVariantId}
+          onChange={onVariantChange}
           labelledBy={variantLabelId}
         />
       </div>
 
       {showQuantity ? (
-        <div>
-          <p className="mb-3 font-mono text-label uppercase tracking-wider text-ink-2">
-            {quantityLabel}
-          </p>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              className="flex size-10 items-center justify-center rounded-pill border border-paper-2 focus-visible:focus-ring"
-              onClick={() => setQuantity(Math.max(1, quantity - 1))}
-              aria-label={site.microcopy.decreaseQuantity}
-            >
-              −
-            </button>
-            <span className="min-w-8 text-center font-mono text-label">
-              {quantity}
-            </span>
-            <button
-              type="button"
-              className="flex size-10 items-center justify-center rounded-pill border border-paper-2 focus-visible:focus-ring"
-              onClick={() => setQuantity(quantity + 1)}
-              aria-label={site.microcopy.increaseQuantity}
-            >
-              +
-            </button>
-          </div>
-        </div>
+        <QuantityStepper
+          value={quantity}
+          onChange={onQuantityChange}
+          itemName={`${displayName} ${variant.name}`}
+        />
       ) : null}
 
-      <div ref={ctaRef} data-purchase-cta>
+      <div ref={ctaRef}>
         <AddToCartButton
           variantId={variant.id}
           imageAssetId={variant.imageAssetId}

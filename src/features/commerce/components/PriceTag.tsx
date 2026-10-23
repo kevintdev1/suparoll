@@ -8,9 +8,7 @@ type PriceTagProps = {
 
 export function PriceTag({ price, currency, className = "" }: PriceTagProps) {
   return (
-    <p
-      className={`font-mono text-label uppercase tracking-wider text-ink ${className}`}
-    >
+    <p className={`font-mono-label text-ink ${className}`}>
       {formatPrice(price, currency)}
     </p>
   );

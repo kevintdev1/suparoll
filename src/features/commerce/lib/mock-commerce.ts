@@ -1,7 +1,6 @@
+import { commerceContent } from "@/content/commerce";
 import { product } from "@/content/product";
 import { productPageContent } from "@/content/product-page";
-import { site } from "@/content/site";
-import { getDebugCartError, getDebugSoldOut } from "@/shared/lib/motion/debug";
 import type { CheckoutValues } from "../schemas/checkout.schema";
 import type {
   Cart,
@@ -11,13 +10,14 @@ import type {
   SimulatedOrder,
 } from "../types";
 import { CommerceError } from "../types";
-import { sumLinePrices } from "./format-price";
+import { getLineTotal, sumPrices } from "./cart-math";
+import { isDebugCartError, isDebugSoldOut } from "./debug";
 import { loadCart, saveCart, saveOrder } from "./storage";
 
 const PRODUCT_ID = "suparoll-camera";
 const SHIPPING_LABEL = productPageContent.purchasePanel.shippingLabel;
 
-export const emptyCart: Cart = {
+const emptyCart: Cart = {
   lines: [],
   itemCount: 0,
   subtotal: null,
@@ -72,13 +72,9 @@ export function getServerCartSnapshot(): Cart {
   return emptyCart;
 }
 
-function summarize(lines: CartLine[]): Cart {
+export function summarizeLines(lines: CartLine[]): Cart {
   const itemCount = lines.reduce((sum, line) => sum + line.quantity, 0);
-  const subtotal = sumLinePrices(
-    lines.map((line) =>
-      line.unitPrice == null ? null : line.unitPrice * line.quantity,
-    ),
-  );
+  const subtotal = sumPrices(lines.map(getLineTotal));
 
   return {
     lines,
@@ -98,8 +94,8 @@ function persist(cart: Cart): Cart {
 }
 
 function assertWritable(): void {
-  if (getDebugCartError()) {
-    throw new CommerceError(site.microcopy.paymentError);
+  if (isDebugCartError()) {
+    throw new CommerceError(commerceContent.checkout.paymentError);
   }
 }
 
@@ -116,7 +112,7 @@ function getProduct(): CommerceProduct {
       name: variant.name,
       colorHex: variant.colorHex,
       imageAssetId: variant.imageAssetId,
-      available: !getDebugSoldOut(),
+      available: !isDebugSoldOut(),
     })),
   };
 }
@@ -133,11 +129,11 @@ function addToCart(variantId: string, quantity = 1): Cart {
   const variant = catalog.variants.find((item) => item.id === variantId);
 
   if (!variant) {
-    throw new CommerceError("Esa variante no está disponible.");
+    throw new CommerceError(commerceContent.product.unavailableVariant);
   }
 
   if (!variant.available) {
-    throw new CommerceError(site.microcopy.outOfStock);
+    throw new CommerceError(commerceContent.product.outOfStock);
   }
 
   const safeQuantity = Math.max(1, Math.floor(quantity));
@@ -167,7 +163,7 @@ function addToCart(variantId: string, quantity = 1): Cart {
         },
       ];
 
-  return persist(summarize(nextLines));
+  return persist(summarizeLines(nextLines));
 }
 
 function updateLine(lineId: string, quantity: number): Cart {
@@ -183,7 +179,7 @@ function updateLine(lineId: string, quantity: number): Cart {
           line.id === lineId ? { ...line, quantity: nextQuantity } : line,
         );
 
-  return persist(summarize(nextLines));
+  return persist(summarizeLines(nextLines));
 }
 
 function removeLine(lineId: string): Cart {
@@ -201,7 +197,7 @@ function checkout(input: CheckoutValues): SimulatedOrder {
   const cart = getCart();
 
   if (cart.lines.length === 0) {
-    throw new CommerceError(site.microcopy.emptyCart);
+    throw new CommerceError(commerceContent.cart.empty);
   }
 
   const order: SimulatedOrder = {
@@ -214,17 +210,13 @@ function checkout(input: CheckoutValues): SimulatedOrder {
   };
 
   saveOrder(order);
-  persist({
-    ...emptyCart,
-    lines: [],
-  });
+  persist(emptyCart);
 
   return order;
 }
 
 export const commerce: CommerceProvider = {
   getProduct,
-  getCart,
   addToCart,
   updateLine,
   removeLine,

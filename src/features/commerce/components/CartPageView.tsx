@@ -1,60 +1,47 @@
 "use client";
 
-import NextLink from "next/link";
-import { useEffect, useState } from "react";
-import { site } from "@/content/site";
-import { CartLine } from "@/features/commerce/components/CartLine";
+import { commerceContent } from "@/content/commerce";
+import { CartLineList } from "@/features/commerce/components/CartLineList";
 import { CartSummary } from "@/features/commerce/components/CartSummary";
 import { useCart } from "@/features/commerce/hooks/useCart";
+import { ButtonLink } from "@/shared/components/ui/ButtonLink";
 import { Link } from "@/shared/components/ui/Link";
+import { useHydrated } from "@/shared/hooks/useHydrated";
+import { focusPageHeading } from "@/shared/lib/motion/navigation-cleanup";
 
 export function CartPageView() {
   const { cart, status, error } = useCart();
-  const [ready, setReady] = useState(false);
+  const hydrated = useHydrated();
+  const copy = commerceContent.cart;
 
-  useEffect(() => {
-    setReady(true);
-  }, []);
+  if (!hydrated) {
+    return <p className="mt-8 text-body text-ink-2">{copy.loading}</p>;
+  }
 
   return (
-    <main className="mx-auto w-full max-w-3xl px-[clamp(16px,3vw,40px)] py-24">
-      <h1 className="font-display text-h2 text-ink">{site.navbar.cartLabel}</h1>
-
-      {!ready ? (
-        <p className="mt-8 text-body text-ink-2">
-          {site.microcopy.loadingCart}
-        </p>
-      ) : null}
-
-      {ready && status === "error" && error ? (
-        <p className="mt-8 text-body text-shutter" role="alert">
+    <>
+      {status === "error" && error ? (
+        <p className="mt-8 text-body text-ink" role="alert">
           {error}
         </p>
       ) : null}
 
-      {ready && cart.lines.length === 0 ? (
+      {cart.lines.length === 0 ? (
         <div className="mt-8 space-y-4">
-          <p className="text-body text-ink-2">{site.microcopy.emptyCart}</p>
-          <Link href="/camara">{site.microcopy.emptyCartCta}</Link>
+          <p className="text-body text-ink-2">{copy.empty}</p>
+          <Link href="/camara">{copy.emptyCta}</Link>
         </div>
-      ) : null}
-
-      {ready && cart.lines.length > 0 ? (
+      ) : (
         <div className="mt-10">
-          {cart.lines.map((line) => (
-            <CartLine key={line.id} line={line} />
-          ))}
+          <CartLineList lines={cart.lines} onLineRemoved={focusPageHeading} />
           <div className="mt-8 space-y-4">
             <CartSummary cart={cart} />
-            <NextLink
-              href="/checkout"
-              className="relative inline-flex h-12 w-full items-center justify-center overflow-hidden rounded-pill bg-ink px-8 text-center text-small font-medium text-paper focus-visible:focus-ring"
-            >
-              {site.microcopy.checkout}
-            </NextLink>
+            <ButtonLink variant="primary" href="/checkout" className="w-full">
+              {copy.checkout}
+            </ButtonLink>
           </div>
         </div>
-      ) : null}
-    </main>
+      )}
+    </>
   );
 }

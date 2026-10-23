@@ -1,9 +1,11 @@
+import { commerceContent } from "@/content/commerce";
+
 export function formatPrice(
   price: number | null,
   currency: string | null,
 ): string {
   if (price == null || currency == null) {
-    return "[[PENDIENTE: precio de venta]]";
+    return commerceContent.price.onRequest;
   }
 
   try {
@@ -12,20 +14,6 @@ export function formatPrice(
       currency,
     }).format(price);
   } catch {
-    return "[[PENDIENTE: precio de venta]]";
+    return commerceContent.price.onRequest;
   }
-}
-
-export function sumLinePrices(prices: Array<number | null>): number | null {
-  let total = 0;
-
-  for (const price of prices) {
-    if (price == null) {
-      return null;
-    }
-
-    total += price;
-  }
-
-  return total;
 }

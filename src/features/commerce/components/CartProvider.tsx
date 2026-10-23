@@ -7,7 +7,7 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
-import { site } from "@/content/site";
+import { commerceContent } from "@/content/commerce";
 import {
   commerce,
   getCartSnapshot,
@@ -15,11 +15,7 @@ import {
   subscribeCart,
 } from "@/features/commerce/lib";
 import type { CheckoutValues } from "@/features/commerce/schemas/checkout.schema";
-import {
-  type CartLine,
-  CommerceError,
-  type LastAdded,
-} from "@/features/commerce/types";
+import { type CartLine, CommerceError } from "@/features/commerce/types";
 import { CartContext, type CartStatus } from "./cart-context";
 
 export function CartProvider({ children }: { children: ReactNode }) {
@@ -31,92 +27,68 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<CartStatus>("ready");
   const [error, setError] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
-  const [lastAdded, setLastAdded] = useState<LastAdded | null>(null);
 
-  const fail = useCallback((caught: unknown) => {
-    const message =
-      caught instanceof CommerceError
-        ? caught.message
-        : site.microcopy.cartError;
-    setStatus("error");
-    setError(message);
+  const succeed = useCallback(() => {
+    setStatus("ready");
+    setError(null);
   }, []);
 
-  const addToCart = useCallback(
-    (variantId: string, quantity = 1) => {
+  const fail = useCallback((caught: unknown) => {
+    setStatus("error");
+    setError(
+      caught instanceof CommerceError
+        ? caught.message
+        : commerceContent.cart.error,
+    );
+  }, []);
+
+  const run = useCallback(
+    (operation: () => void): boolean => {
       try {
-        const product = commerce.getProduct();
-        const variant = product.variants.find((item) => item.id === variantId);
-
-        commerce.addToCart(variantId, quantity);
-        setStatus("ready");
-        setError(null);
-
-        if (variant) {
-          setLastAdded({
-            variantId: variant.id,
-            imageAssetId: variant.imageAssetId,
-          });
-        }
-
+        operation();
+        succeed();
         return true;
       } catch (caught) {
         fail(caught);
         return false;
       }
     },
-    [fail],
+    [fail, succeed],
+  );
+
+  const addToCart = useCallback(
+    (variantId: string, quantity = 1) =>
+      run(() => commerce.addToCart(variantId, quantity)),
+    [run],
   );
 
   const updateLine = useCallback(
     (lineId: string, quantity: number) => {
-      try {
-        commerce.updateLine(lineId, quantity);
-        setStatus("ready");
-        setError(null);
-      } catch (caught) {
-        fail(caught);
-      }
+      run(() => commerce.updateLine(lineId, quantity));
     },
-    [fail],
+    [run],
   );
 
   const removeLine = useCallback(
     (lineId: string) => {
       const existing = cart.lines.find((line) => line.id === lineId) ?? null;
-
-      try {
-        commerce.removeLine(lineId);
-        setStatus("ready");
-        setError(null);
-        return existing;
-      } catch (caught) {
-        fail(caught);
-        return null;
-      }
+      return run(() => commerce.removeLine(lineId)) ? existing : null;
     },
-    [cart.lines, fail],
+    [cart.lines, run],
   );
 
   const restoreLine = useCallback(
     (line: CartLine) => {
-      try {
-        commerce.addToCart(line.variantId, line.quantity);
-        setStatus("ready");
-        setError(null);
-      } catch (caught) {
-        fail(caught);
-      }
+      run(() => commerce.addToCart(line.variantId, line.quantity));
     },
-    [fail],
+    [run],
   );
 
   const checkout = useCallback(
     (input: CheckoutValues) => {
       try {
         const order = commerce.checkout(input);
-        setStatus("ready");
-        setError(null);
+        succeed();
         setIsOpen(false);
         return order;
       } catch (caught) {
@@ -124,8 +96,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
         throw caught;
       }
     },
-    [fail],
+    [fail, succeed],
   );
+
+  const openCart = useCallback(() => setIsOpen(true), []);
+  const closeCart = useCallback(() => setIsOpen(false), []);
+  const toggleCart = useCallback(() => setIsOpen((open) => !open), []);
 
   const value = useMemo(
     () => ({
@@ -133,30 +109,29 @@ export function CartProvider({ children }: { children: ReactNode }) {
       status,
       error,
       isOpen,
-      lastAdded,
-      openCart: () => setIsOpen(true),
-      closeCart: () => setIsOpen(false),
-      toggleCart: () => setIsOpen((open) => !open),
+      openCart,
+      closeCart,
+      toggleCart,
       addToCart,
       updateLine,
       removeLine,
       restoreLine,
       checkout,
-      clearError: () => {
-        setError(null);
-        setStatus("ready");
-      },
+      clearError: succeed,
     }),
     [
       addToCart,
       cart,
       checkout,
+      closeCart,
       error,
       isOpen,
-      lastAdded,
+      openCart,
       removeLine,
       restoreLine,
       status,
+      succeed,
+      toggleCart,
       updateLine,
     ],
   );

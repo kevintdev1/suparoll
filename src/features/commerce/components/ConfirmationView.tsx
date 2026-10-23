@@ -1,80 +1,60 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { site } from "@/content/site";
+import { useMemo } from "react";
+import { commerceContent } from "@/content/commerce";
 import { CartSummary } from "@/features/commerce/components/CartSummary";
 import { OrderSnapshot } from "@/features/commerce/components/OrderSnapshot";
-import { loadOrder } from "@/features/commerce/lib";
-import type { SimulatedOrder } from "@/features/commerce/types";
+import { loadOrder, summarizeLines } from "@/features/commerce/lib";
 import { Link } from "@/shared/components/ui/Link";
-
-const SNAPSHOT_ASSET_ID = "develop-photo";
+import { useHydrated } from "@/shared/hooks/useHydrated";
 
 export function ConfirmationView() {
-  const [order, setOrder] = useState<SimulatedOrder | null>(null);
-  const [ready, setReady] = useState(false);
+  const hydrated = useHydrated();
+  const order = useMemo(() => (hydrated ? loadOrder() : null), [hydrated]);
+  const copy = commerceContent.confirmation;
 
-  useEffect(() => {
-    setOrder(loadOrder());
-    setReady(true);
-  }, []);
-
-  if (!ready) {
+  if (!hydrated) {
     return (
-      <main className="mx-auto max-w-2xl px-[clamp(16px,3vw,40px)] py-24">
-        <p className="text-body text-ink-2">{site.microcopy.loadingCart}</p>
-      </main>
+      <p className="text-body text-ink-2">{commerceContent.cart.loading}</p>
     );
   }
 
   if (!order) {
     return (
-      <main className="mx-auto max-w-2xl px-[clamp(16px,3vw,40px)] py-24">
-        <h1 className="font-display text-h2 text-ink">
-          {site.microcopy.confirmationTitle}
-        </h1>
-        <p className="mt-6 text-body text-ink-2">
-          {site.microcopy.confirmationEmpty}
-        </p>
+      <>
+        <h1 className="font-display text-h2 text-ink">{copy.title}</h1>
+        <p className="mt-6 text-body text-ink-2">{copy.empty}</p>
         <div className="mt-8">
-          <Link href="/camara">{site.microcopy.emptyCartCta}</Link>
+          <Link href="/camara">{commerceContent.cart.emptyCta}</Link>
         </div>
-      </main>
+      </>
     );
   }
 
-  const cartView = {
-    lines: order.lines,
-    itemCount: order.lines.reduce((sum, line) => sum + line.quantity, 0),
-    subtotal: order.subtotal,
-    shippingStatus: "pending" as const,
-    shippingLabel: order.shippingLabel,
-    total: order.subtotal,
-  };
-
   return (
-    <main className="mx-auto max-w-2xl px-[clamp(16px,3vw,40px)] py-24">
-      <p className="font-mono text-label uppercase tracking-wider text-ink-2">
-        {site.microcopy.orderNumber} {order.orderId}
+    <>
+      <p className="font-mono-label text-ink-2">
+        {copy.orderNumber} {order.orderId}
       </p>
-      <h1 className="mt-4 font-display text-h2 text-ink">
-        {site.microcopy.confirmationTitle}
-      </h1>
+      <h1 className="mt-4 font-display text-h2 text-ink">{copy.title}</h1>
       <p className="mt-4 text-body text-ink-2">
-        Gracias, {order.contactName}. Esto es una confirmación de demostración.
+        {copy.thanks.replace("{name}", order.contactName)}
       </p>
 
       <div className="mt-12">
-        <OrderSnapshot assetId={SNAPSHOT_ASSET_ID} />
+        <OrderSnapshot
+          assetId={copy.snapshotAssetId}
+          fallbackAlt={copy.snapshotAlt}
+        />
       </div>
 
       <div className="mt-12">
-        <CartSummary cart={cartView} />
+        <CartSummary cart={summarizeLines(order.lines)} />
       </div>
 
       <div className="mt-10">
-        <Link href="/">{site.microcopy.continueExploring}</Link>
+        <Link href="/">{copy.continueExploring}</Link>
       </div>
-    </main>
+    </>
   );
 }

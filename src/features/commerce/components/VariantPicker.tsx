@@ -30,7 +30,7 @@ export function VariantPicker({
         return (
           <label
             key={variant.id}
-            className="flex cursor-pointer items-center gap-2 rounded-pill border border-paper-2 px-3 py-2 text-ink has-[:checked]:border-ink has-[:focus-visible]:focus-ring"
+            className="flex min-h-11 cursor-pointer items-center gap-2 rounded-pill border border-ink/40 px-3 text-ink has-checked:border-ink has-focus-visible:focus-ring"
           >
             <input
               type="radio"
@@ -41,13 +41,11 @@ export function VariantPicker({
               className="sr-only"
             />
             <span
-              className="size-5 rounded-full border border-paper-2"
+              className="size-5 rounded-full border border-ink/40"
               style={{ backgroundColor: variant.colorHex }}
               aria-hidden="true"
             />
-            <span className="font-mono text-label uppercase tracking-wider">
-              {variant.name}
-            </span>
+            <span className="font-mono-label">{variant.name}</span>
           </label>
         );
       })}

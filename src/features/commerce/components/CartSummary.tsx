@@ -1,6 +1,5 @@
-"use client";
-
-import { formatPrice } from "@/features/commerce/lib";
+import { commerceContent } from "@/content/commerce";
+import { formatPrice, getCartCurrency } from "@/features/commerce/lib";
 import type { Cart } from "@/features/commerce/types";
 
 type CartSummaryProps = {
@@ -8,25 +7,24 @@ type CartSummaryProps = {
 };
 
 export function CartSummary({ cart }: CartSummaryProps) {
-  const currency = cart.lines[0]?.currency ?? null;
+  const currency = getCartCurrency(cart.lines);
+  const { summary } = commerceContent;
 
   return (
     <dl className="space-y-2 text-small text-ink">
       <div className="flex justify-between gap-4">
-        <dt>Subtotal</dt>
-        <dd className="font-mono text-label uppercase tracking-wider">
+        <dt>{summary.subtotal}</dt>
+        <dd className="font-mono-label">
           {formatPrice(cart.subtotal, currency)}
         </dd>
       </div>
       <div className="flex justify-between gap-4">
-        <dt>Envío</dt>
+        <dt>{summary.shipping}</dt>
         <dd className="text-right text-ink-2">{cart.shippingLabel}</dd>
       </div>
       <div className="flex justify-between gap-4 border-t border-paper-2 pt-2 text-body">
-        <dt>Total</dt>
-        <dd className="font-mono text-label uppercase tracking-wider">
-          {formatPrice(cart.total, currency)}
-        </dd>
+        <dt>{summary.total}</dt>
+        <dd className="font-mono-label">{formatPrice(cart.total, currency)}</dd>
       </div>
     </dl>
   );

@@ -1,55 +1,24 @@
-import { z } from "zod";
+import { cartSchema, orderSchema } from "../schemas/cart.schema";
 import type { Cart, SimulatedOrder } from "../types";
 
-export const CART_STORAGE_KEY = "suparoll:cart:v1";
-export const ORDER_STORAGE_KEY = "suparoll:last-order:v1";
+const CART_STORAGE_KEY = "suparoll:cart:v1";
+const ORDER_STORAGE_KEY = "suparoll:last-order:v1";
 
-const cartLineSchema = z.object({
-  id: z.string().min(1),
-  productId: z.string().min(1),
-  variantId: z.string().min(1),
-  name: z.string().min(1),
-  variantName: z.string().min(1),
-  quantity: z.number().int().positive(),
-  unitPrice: z.number().nullable(),
-  currency: z.string().nullable(),
-  imageAssetId: z.string().min(1),
-  colorHex: z.string().min(1),
-});
+type StorageKind = "localStorage" | "sessionStorage";
 
-const cartSchema = z.object({
-  lines: z.array(cartLineSchema),
-  itemCount: z.number().int().nonnegative(),
-  subtotal: z.number().nullable(),
-  shippingStatus: z.enum(["pending", "flat", "free", "threshold"]),
-  shippingLabel: z.string().min(1),
-  total: z.number().nullable(),
-});
-
-const orderSchema = z.object({
-  orderId: z.string().min(1),
-  lines: z.array(cartLineSchema),
-  subtotal: z.number().nullable(),
-  shippingLabel: z.string().min(1),
-  currency: z.string().nullable(),
-  contactName: z.string().min(1),
-});
-
-function readJson(key: string): unknown {
+function readJson(kind: StorageKind, key: string): unknown {
   try {
-    const raw = window.localStorage.getItem(key);
+    const raw = window[kind].getItem(key);
     return raw ? JSON.parse(raw) : null;
   } catch {
     return null;
   }
 }
 
-function writeJson(key: string, value: unknown): void {
+function writeJson(kind: StorageKind, key: string, value: unknown): void {
   try {
-    window.localStorage.setItem(key, JSON.stringify(value));
-  } catch {
-    // Quota, private mode, or disabled storage: keep working in memory.
-  }
+    window[kind].setItem(key, JSON.stringify(value));
+  } catch {}
 }
 
 export function loadCart(): Cart | null {
@@ -57,7 +26,9 @@ export function loadCart(): Cart | null {
     return null;
   }
 
-  const parsed = cartSchema.safeParse(readJson(CART_STORAGE_KEY));
+  const parsed = cartSchema.safeParse(
+    readJson("localStorage", CART_STORAGE_KEY),
+  );
   return parsed.success ? parsed.data : null;
 }
 
@@ -66,7 +37,7 @@ export function saveCart(cart: Cart): void {
     return;
   }
 
-  writeJson(CART_STORAGE_KEY, cart);
+  writeJson("localStorage", CART_STORAGE_KEY, cart);
 }
 
 export function loadOrder(): SimulatedOrder | null {
@@ -74,17 +45,10 @@ export function loadOrder(): SimulatedOrder | null {
     return null;
   }
 
-  try {
-    const raw = window.sessionStorage.getItem(ORDER_STORAGE_KEY);
-    if (!raw) {
-      return null;
-    }
-
-    const parsed = orderSchema.safeParse(JSON.parse(raw));
-    return parsed.success ? parsed.data : null;
-  } catch {
-    return null;
-  }
+  const parsed = orderSchema.safeParse(
+    readJson("sessionStorage", ORDER_STORAGE_KEY),
+  );
+  return parsed.success ? parsed.data : null;
 }
 
 export function saveOrder(order: SimulatedOrder): void {
@@ -92,9 +56,5 @@ export function saveOrder(order: SimulatedOrder): void {
     return;
   }
 
-  try {
-    window.sessionStorage.setItem(ORDER_STORAGE_KEY, JSON.stringify(order));
-  } catch {
-    // Same as cart: ignore storage failures.
-  }
+  writeJson("sessionStorage", ORDER_STORAGE_KEY, order);
 }

@@ -1,3 +1,9 @@
+import type { z } from "zod";
+import type {
+  cartLineSchema,
+  cartSchema,
+  orderSchema,
+} from "../schemas/cart.schema";
 import type { CheckoutValues } from "../schemas/checkout.schema";
 
 export class CommerceError extends Error {
@@ -6,8 +12,6 @@ export class CommerceError extends Error {
     this.name = "CommerceError";
   }
 }
-
-export type ShippingStatus = "pending" | "flat" | "free" | "threshold";
 
 export type CommerceVariant = {
   id: string;
@@ -27,53 +31,18 @@ export type CommerceProduct = {
   variants: CommerceVariant[];
 };
 
-export type CartLine = {
-  id: string;
-  productId: string;
-  variantId: string;
-  name: string;
-  variantName: string;
-  quantity: number;
-  unitPrice: number | null;
-  currency: string | null;
-  imageAssetId: string;
-  colorHex: string;
-};
+export type CartLine = z.infer<typeof cartLineSchema>;
 
-export type Cart = {
-  lines: CartLine[];
-  itemCount: number;
-  subtotal: number | null;
-  shippingStatus: ShippingStatus;
-  shippingLabel: string;
-  total: number | null;
-};
+export type Cart = z.infer<typeof cartSchema>;
 
-export type CheckoutInput = CheckoutValues;
+export type SimulatedOrder = z.infer<typeof orderSchema>;
 
-export type ActionResult =
-  | { ok: true; orderId: string }
-  | { ok: false; error: string };
-
-export type SimulatedOrder = {
-  orderId: string;
-  lines: CartLine[];
-  subtotal: number | null;
-  shippingLabel: string;
-  currency: string | null;
-  contactName: string;
-};
+export type ActionResult = { ok: true } | { ok: false; error: string };
 
 export type CommerceProvider = {
   getProduct: () => CommerceProduct;
-  getCart: () => Cart;
   addToCart: (variantId: string, quantity?: number) => Cart;
   updateLine: (lineId: string, quantity: number) => Cart;
   removeLine: (lineId: string) => Cart;
-  checkout: (input: CheckoutInput) => SimulatedOrder;
-};
-
-export type LastAdded = {
-  variantId: string;
-  imageAssetId: string;
+  checkout: (input: CheckoutValues) => SimulatedOrder;
 };
