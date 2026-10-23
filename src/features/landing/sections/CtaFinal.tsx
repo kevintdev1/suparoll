@@ -1,27 +1,23 @@
 import { homeContent } from "@/content/home";
 import { product } from "@/content/product";
+import { formatPrice } from "@/features/commerce";
 import { CtaFinalExit } from "@/features/landing/scenes/CtaFinalExit";
 import { ButtonLink } from "@/shared/components/ui/ButtonLink";
 import { RevealText } from "@/shared/components/ui/RevealText";
 
 export function CtaFinal() {
-  const { headline, cta, trustLabel } = homeContent.ctaFinal;
-  const priceLabel =
-    product.price != null && product.currency != null
-      ? `${product.price} ${product.currency}`
-      : "[[PENDIENTE: precio de venta]]";
+  const { id, headline, cta, trustLabel } = homeContent.ctaFinal;
+  const priceLabel = formatPrice(product.price, product.currency);
 
   return (
-    <section
-      id={homeContent.ctaFinal.id}
+    <CtaFinalExit
+      id={id}
+      footerId={homeContent.footer.id}
       data-theme="dark"
       aria-labelledby="cta-final-title"
       className="relative z-20 overflow-hidden bg-ink text-paper"
     >
-      <div
-        data-anim="cta-inner"
-        className="flex min-h-svh flex-col items-center justify-center px-4 py-24 text-center md:px-6 lg:px-8"
-      >
+      <div className="flex min-h-svh flex-col items-center justify-center page-margin py-24 text-center">
         <RevealText
           as="h2"
           id="cta-final-title"
@@ -30,20 +26,14 @@ export function CtaFinal() {
           {headline}
         </RevealText>
 
-        <p className="mt-6 font-mono text-label uppercase tracking-wider text-paper/70">
-          {priceLabel}
-        </p>
+        <p className="mt-6 font-mono-label text-paper/70">{priceLabel}</p>
 
-        <div className="mt-10">
-          <ButtonLink href={cta.href} magnetic>
-            {cta.label}
-          </ButtonLink>
-        </div>
+        <ButtonLink href={cta.href} magnetic className="mt-10">
+          {cta.label}
+        </ButtonLink>
 
-        <p className="mt-8 max-w-md text-small text-paper/60">{trustLabel}</p>
+        <p className="mt-8 max-w-md text-small text-paper/70">{trustLabel}</p>
       </div>
-
-      <CtaFinalExit />
-    </section>
+    </CtaFinalExit>
   );
 }

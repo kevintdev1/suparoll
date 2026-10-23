@@ -1,20 +1,31 @@
 import { homeContent } from "@/content/home";
-import { SectionShell } from "./SectionShell";
+import { SocialReviews } from "@/features/landing/scenes/SocialReviews";
+import { RevealText } from "@/shared/components/ui/RevealText";
 
 export function Social() {
-  const { title, reviews } = homeContent.social;
+  const { id, title, reviews } = homeContent.social;
+
+  if (!reviews || reviews.length === 0) {
+    return null;
+  }
 
   return (
-    <SectionShell
-      id={homeContent.social.id}
-      title={title}
-      summary={
-        reviews
-          ? `${reviews.length} reseñas`
-          : "[[PENDIENTE: testimonios / reseñas — se ocultará en producción si vacío]]"
-      }
-      minHeight="min-h-[60svh]"
-      className="bg-paper"
-    />
+    <section
+      id={id}
+      aria-labelledby="social-title"
+      className="relative z-1 bg-paper"
+    >
+      <div className="mx-auto max-w-7xl page-margin py-24 md:py-32">
+        <RevealText
+          as="h2"
+          id="social-title"
+          className="font-display text-h2 text-ink"
+        >
+          {title}
+        </RevealText>
+
+        <SocialReviews reviews={reviews} />
+      </div>
+    </section>
   );
 }

@@ -1,323 +1,218 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import type { GalleryColumn, GalleryPhotoItem } from "@/content/gallery";
 import { GalleryLightbox } from "@/features/landing/components/GalleryLightbox";
 import { GalleryPhoto } from "@/features/landing/components/GalleryPhoto";
+import { useKeepFocusInClip } from "@/features/landing/hooks/useKeepFocusInClip";
+import type {
+  GalleryColumn,
+  GalleryPhotoItem,
+} from "@/features/landing/lib/gallery";
 import { getDebugMotion } from "@/shared/lib/motion/debug";
 import { gsap, useGSAP } from "@/shared/lib/motion/gsap";
-import {
-  MOTION_DESKTOP,
-  MOTION_MOBILE,
-  MOTION_REDUCED,
-} from "@/shared/lib/motion/media";
+import { MEDIA_DESKTOP, MOTION_REDUCED } from "@/shared/lib/motion/media";
 import { dur, ease, scrub, stagger } from "@/shared/lib/motion/tokens";
 
 type GalleryColumnsProps = {
+  trackId: string;
   desktopColumns: GalleryColumn[];
   mobileColumns: GalleryColumn[];
+  labels: { openPhoto: string; closeViewer: string };
 };
 
-function ColumnList({
-  column,
-  onOpen,
-}: {
+type ColumnListProps = {
   column: GalleryColumn;
+  openLabel: string;
   onOpen: (photo: GalleryPhotoItem) => void;
-}) {
+};
+
+const COLUMN_SELECTOR = '[data-anim="column"]';
+
+function ColumnList({ column, openLabel, onOpen }: ColumnListProps) {
   return (
     <ul
       data-anim="column"
       data-direction={column.direction}
-      className="flex w-full flex-col gap-2"
+      className="flex flex-col gap-2"
     >
       {column.photos.map((photo) => (
         <li key={photo.slotId}>
-          <GalleryPhoto photo={photo} onOpen={onOpen} />
+          <GalleryPhoto photo={photo} openLabel={openLabel} onOpen={onOpen} />
         </li>
       ))}
     </ul>
   );
 }
 
+function revealColumns(track: HTMLElement, columnEls: HTMLElement[]) {
+  const tl = gsap.timeline({
+    scrollTrigger: {
+      trigger: track,
+      start: "top 80%",
+      once: true,
+      markers: getDebugMotion(),
+    },
+  });
+
+  for (const columnEl of columnEls) {
+    const masks = columnEl.querySelectorAll('[data-anim="photo-mask"]');
+
+    gsap.set(masks, { autoAlpha: 1, scaleY: 1 });
+    tl.to(
+      masks,
+      {
+        scaleY: 0,
+        duration: dur.reveal,
+        ease: ease.reveal,
+        stagger: stagger.items,
+      },
+      0,
+    );
+  }
+}
+
+function parallaxColumns(
+  track: HTMLElement,
+  columnEls: HTMLElement[],
+  columns: GalleryColumn[],
+) {
+  const tl = gsap.timeline({
+    scrollTrigger: {
+      trigger: track,
+      start: "top bottom",
+      end: "bottom bottom",
+      scrub: scrub.parallax,
+      markers: getDebugMotion(),
+    },
+  });
+
+  columns.forEach((column, index) => {
+    const columnEl = columnEls[index];
+
+    if (columnEl) {
+      tl.fromTo(
+        columnEl,
+        { yPercent: column.parallax.from },
+        { yPercent: column.parallax.to, ease: ease.scrub },
+        0,
+      );
+    }
+  });
+}
+
+function fadeColumns(track: HTMLElement, columnEls: HTMLElement[]) {
+  gsap.from(
+    columnEls.flatMap((columnEl) =>
+      gsap.utils.toArray<HTMLElement>('[data-anim="photo"]', columnEl),
+    ),
+    {
+      autoAlpha: 0,
+      duration: dur.base,
+      ease: ease.out,
+      stagger: stagger.items,
+      scrollTrigger: {
+        trigger: track,
+        start: "top 80%",
+        once: true,
+        markers: getDebugMotion(),
+      },
+    },
+  );
+}
+
 export function GalleryColumns({
+  trackId,
   desktopColumns,
   mobileColumns,
+  labels,
 }: GalleryColumnsProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const [activePhoto, setActivePhoto] = useState<GalleryPhotoItem | null>(null);
 
-  const handleOpen = useCallback((photo: GalleryPhotoItem) => {
-    setActivePhoto(photo);
-  }, []);
+  const handleClose = useCallback(() => setActivePhoto(null), []);
 
-  const handleClose = useCallback(() => {
-    setActivePhoto(null);
-  }, []);
+  useKeepFocusInClip(rootRef, COLUMN_SELECTOR);
 
   useGSAP(
     () => {
       const root = rootRef.current;
-      const section = root?.closest("section");
+      const track = document.getElementById(trackId);
 
-      if (!root || !section) {
+      if (!root || !track) {
         return;
       }
 
-      const setupColumnReveal = (columnEls: NodeListOf<Element>) => {
-        const timelines: gsap.core.Timeline[] = [];
+      const mm = gsap.matchMedia();
 
-        columnEls.forEach((columnEl) => {
-          const clipEls = columnEl.querySelectorAll(
-            '[data-anim="reveal-clip"]',
-          );
-          const innerEls = columnEl.querySelectorAll(
-            '[data-anim="reveal-inner"]',
-          );
-          const imageEls = columnEl.querySelectorAll(
-            '[data-anim="reveal-image"]',
+      mm.add(
+        { isDesktop: MEDIA_DESKTOP, reduceMotion: MOTION_REDUCED },
+        (context) => {
+          const { isDesktop, reduceMotion } = context.conditions ?? {};
+          const grid = isDesktop ? "desktop" : "mobile";
+          const columnEls = gsap.utils.toArray<HTMLElement>(
+            `[data-grid="${grid}"] ${COLUMN_SELECTOR}`,
+            root,
           );
 
-          if (clipEls.length === 0) {
+          if (reduceMotion) {
+            fadeColumns(track, columnEls);
             return;
           }
 
-          gsap.set(clipEls, { clipPath: "inset(100% 0 0 0)" });
-          gsap.set(innerEls, { scale: 1.12, transformOrigin: "center center" });
-
-          const timeline = gsap.timeline({
-            scrollTrigger: {
-              trigger: section,
-              start: "top 80%",
-              once: true,
-              markers: getDebugMotion(),
-            },
-            onStart: () => {
-              imageEls.forEach((el) => {
-                el.setAttribute("data-revealed", "");
-              });
-            },
-          });
-
-          timeline.to(clipEls, {
-            clipPath: "inset(0 0 0 0)",
-            duration: dur.reveal,
-            ease: ease.reveal,
-            stagger: stagger.items,
-          });
-
-          timeline.to(
-            innerEls,
-            {
-              scale: 1,
-              duration: dur.reveal,
-              ease: ease.reveal,
-              stagger: stagger.items,
-            },
-            "<",
+          revealColumns(track, columnEls);
+          parallaxColumns(
+            track,
+            columnEls,
+            isDesktop ? desktopColumns : mobileColumns,
           );
+        },
+      );
 
-          timelines.push(timeline);
-        });
-
-        return () => {
-          timelines.forEach((timeline) => {
-            timeline.scrollTrigger?.kill();
-            timeline.kill();
-          });
-        };
-      };
-
-      const setupParallax = (
-        columnEls: NodeListOf<Element>,
-        columns: GalleryColumn[],
-      ) => {
-        if (columnEls.length === 0) {
-          return () => {};
-        }
-
-        columns.forEach((column, index) => {
-          const columnEl = columnEls[index];
-
-          if (columnEl) {
-            gsap.set(columnEl, { yPercent: column.parallax.from });
-          }
-        });
-
-        const timeline = gsap.timeline({
-          scrollTrigger: {
-            trigger: section,
-            start: "top bottom",
-            end: "bottom top",
-            scrub: scrub.parallax,
-            markers: getDebugMotion(),
-            onToggle: (self) => {
-              columnEls.forEach((columnEl) => {
-                (columnEl as HTMLElement).style.willChange = self.isActive
-                  ? "transform"
-                  : "auto";
-              });
-            },
-          },
-        });
-
-        columns.forEach((column, index) => {
-          const columnEl = columnEls[index];
-
-          if (columnEl) {
-            timeline.to(
-              columnEl,
-              {
-                yPercent: column.parallax.to,
-                ease: ease.scrub,
-                duration: 1,
-              },
-              0,
-            );
-          }
-        });
-
-        return () => {
-          timeline.scrollTrigger?.kill();
-          timeline.kill();
-        };
-      };
-
-      const setupReducedMotion = (columnEls: NodeListOf<Element>) => {
-        const timelines: gsap.core.Timeline[] = [];
-
-        columnEls.forEach((columnEl) => {
-          const imageEls = columnEl.querySelectorAll(
-            '[data-anim="reveal-image"]',
-          );
-          const clipEls = columnEl.querySelectorAll(
-            '[data-anim="reveal-clip"]',
-          );
-          const innerEls = columnEl.querySelectorAll(
-            '[data-anim="reveal-inner"]',
-          );
-
-          gsap.set(imageEls, { opacity: 0 });
-          gsap.set(clipEls, { clipPath: "inset(0 0 0 0)" });
-          gsap.set(innerEls, { scale: 1 });
-
-          const timeline = gsap.timeline({
-            scrollTrigger: {
-              trigger: section,
-              start: "top 80%",
-              once: true,
-              markers: getDebugMotion(),
-            },
-            onStart: () => {
-              imageEls.forEach((el) => {
-                el.setAttribute("data-revealed", "");
-              });
-            },
-          });
-
-          timeline.to(imageEls, {
-            opacity: 1,
-            duration: dur.base,
-            ease: ease.out,
-            stagger: stagger.items,
-          });
-
-          timelines.push(timeline);
-        });
-
-        return () => {
-          timelines.forEach((timeline) => {
-            timeline.scrollTrigger?.kill();
-            timeline.kill();
-          });
-        };
-      };
-
-      const mm = gsap.matchMedia();
-
-      mm.add(MOTION_DESKTOP, () => {
-        const desktopEls = root.querySelectorAll(
-          '[data-anim="grid-desktop"] [data-anim="column"]',
-        );
-
-        const cleanupReveal = setupColumnReveal(desktopEls);
-        const cleanupParallax = setupParallax(desktopEls, desktopColumns);
-
-        return () => {
-          cleanupReveal();
-          cleanupParallax();
-        };
-      });
-
-      mm.add(MOTION_MOBILE, () => {
-        const mobileEls = root.querySelectorAll(
-          '[data-anim="grid-mobile"] [data-anim="column"]',
-        );
-
-        const cleanupReveal = setupColumnReveal(mobileEls);
-        const cleanupParallax = setupParallax(mobileEls, mobileColumns);
-
-        return () => {
-          cleanupReveal();
-          cleanupParallax();
-        };
-      });
-
-      mm.add(MOTION_REDUCED, () => {
-        const visibleSelector = window.matchMedia("(min-width: 1024px)").matches
-          ? '[data-anim="grid-desktop"] [data-anim="column"]'
-          : '[data-anim="grid-mobile"] [data-anim="column"]';
-        const cleanupReduced = setupReducedMotion(
-          root.querySelectorAll(visibleSelector),
-        );
-
-        return () => {
-          cleanupReduced();
-        };
-      });
-
-      return () => {
-        mm.revert();
-      };
+      return () => mm.revert();
     },
-    { scope: rootRef, dependencies: [desktopColumns, mobileColumns] },
+    { scope: rootRef, dependencies: [trackId, desktopColumns, mobileColumns] },
   );
 
   return (
     <>
       <div
         ref={rootRef}
-        data-anim="gallery-grid"
-        className="h-[140svh] overflow-hidden bg-ink md:h-full md:w-[60%]"
+        className="h-[140svh] overflow-clip bg-ink md:h-full md:w-3/5"
       >
         <div
-          data-anim="grid-desktop"
+          data-grid="desktop"
           className="hidden h-full items-start gap-2 md:grid md:grid-cols-4"
         >
           {desktopColumns.map((column) => (
             <ColumnList
-              key={`desktop-${column.id}`}
+              key={column.id}
               column={column}
-              onOpen={handleOpen}
+              openLabel={labels.openPhoto}
+              onOpen={setActivePhoto}
             />
           ))}
         </div>
 
         <div
-          data-anim="grid-mobile"
+          data-grid="mobile"
           className="grid h-full grid-cols-2 items-start gap-2 md:hidden"
         >
           {mobileColumns.map((column) => (
             <ColumnList
-              key={`mobile-${column.id}`}
+              key={column.id}
               column={column}
-              onOpen={handleOpen}
+              openLabel={labels.openPhoto}
+              onOpen={setActivePhoto}
             />
           ))}
         </div>
       </div>
 
-      <GalleryLightbox photo={activePhoto} onClose={handleClose} />
+      <GalleryLightbox
+        photo={activePhoto}
+        closeLabel={labels.closeViewer}
+        onClose={handleClose}
+      />
     </>
   );
 }

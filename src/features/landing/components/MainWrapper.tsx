@@ -1,43 +1,34 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { type ReactNode, useRef } from "react";
+import { useFooterReveal } from "@/features/landing/hooks/useFooterReveal";
+import { MAIN_CONTENT_ID } from "@/shared/lib/navigation";
 
 type MainWrapperProps = {
-  children: React.ReactNode;
+  children: ReactNode;
+  footer: ReactNode;
 };
 
-export function MainWrapper({ children }: MainWrapperProps) {
-  const mainRef = useRef<HTMLElement>(null);
-  const [footerHeight, setFooterHeight] = useState(0);
-
-  useEffect(() => {
-    const footer = document.querySelector("footer");
-
-    if (!footer) {
-      return;
-    }
-
-    const updateHeight = () => {
-      setFooterHeight(footer.offsetHeight);
-    };
-
-    updateHeight();
-
-    const resizeObserver = new ResizeObserver(updateHeight);
-    resizeObserver.observe(footer);
-
-    return () => {
-      resizeObserver.disconnect();
-    };
-  }, []);
+export function MainWrapper({ children, footer }: MainWrapperProps) {
+  const footerRef = useRef<HTMLDivElement>(null);
+  const revealHeight = useFooterReveal(footerRef);
+  const fixed = revealHeight > 0;
 
   return (
-    <main
-      ref={mainRef}
-      className="relative z-[1] bg-paper"
-      style={{ marginBottom: footerHeight }}
-    >
-      {children}
-    </main>
+    <>
+      <main
+        id={MAIN_CONTENT_ID}
+        className="relative z-1 bg-paper"
+        style={fixed ? { marginBottom: revealHeight } : undefined}
+      >
+        {children}
+      </main>
+      <div
+        ref={footerRef}
+        className={fixed ? "fixed inset-x-0 bottom-0 z-0" : undefined}
+      >
+        {footer}
+      </div>
+    </>
   );
 }

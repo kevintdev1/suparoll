@@ -1,100 +1,93 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useRef } from "react";
-import type { GalleryPhotoItem } from "@/content/gallery";
+import { useEffect, useId, useRef } from "react";
+import type { GalleryPhotoItem } from "@/features/landing/lib/gallery";
+import { lockScroll } from "@/shared/lib/motion/scroll-lock";
 
 type GalleryLightboxProps = {
   photo: GalleryPhotoItem | null;
+  closeLabel: string;
   onClose: () => void;
 };
 
-export function GalleryLightbox({ photo, onClose }: GalleryLightboxProps) {
+export function GalleryLightbox({
+  photo,
+  closeLabel,
+  onClose,
+}: GalleryLightboxProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
-  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const figureRef = useRef<HTMLElement>(null);
+  const titleId = useId();
 
   useEffect(() => {
     const dialog = dialogRef.current;
 
-    if (!dialog) {
+    if (!dialog || !photo) {
       return;
     }
 
-    if (photo) {
-      if (!dialog.open) {
-        dialog.showModal();
+    if (!dialog.open) {
+      dialog.showModal();
+    }
+
+    const release = lockScroll();
+
+    const onBackdropClick = (event: MouseEvent) => {
+      if (!figureRef.current?.contains(event.target as Node)) {
+        dialog.close();
       }
-      closeButtonRef.current?.focus();
-    } else if (dialog.open) {
-      dialog.close();
-    }
-  }, [photo]);
-
-  useEffect(() => {
-    const dialog = dialogRef.current;
-
-    if (!dialog) {
-      return;
-    }
-
-    const handleClose = () => {
-      onClose();
     };
 
-    dialog.addEventListener("close", handleClose);
+    dialog.addEventListener("click", onBackdropClick);
 
     return () => {
-      dialog.removeEventListener("close", handleClose);
+      dialog.removeEventListener("click", onBackdropClick);
+      release();
+
+      if (dialog.open) {
+        dialog.close();
+      }
     };
-  }, [onClose]);
+  }, [photo]);
 
   return (
     <dialog
       ref={dialogRef}
-      aria-labelledby="gallery-lightbox-title"
-      className="fixed inset-0 z-50 m-0 h-full max-h-none w-full max-w-none border-0 bg-ink p-0 backdrop:bg-ink/90 open:flex open:items-center open:justify-center"
-      onClick={(event) => {
-        if (event.target === dialogRef.current) {
-          dialogRef.current?.close();
-        }
-      }}
-      onKeyDown={(event) => {
-        if (event.key === "Escape") {
-          dialogRef.current?.close();
-        }
-      }}
+      aria-labelledby={titleId}
+      className="dialog-full"
+      onClose={onClose}
     >
       {photo ? (
-        <figure className="relative mx-auto flex max-h-[90svh] max-w-[min(90vw,720px)] flex-col gap-4 p-[clamp(16px,3vw,40px)]">
-          <p id="gallery-lightbox-title" className="sr-only">
-            {photo.alt}
-          </p>
+        <div className="flex size-full items-center justify-center bg-ink/90 page-margin">
           <button
-            ref={closeButtonRef}
             type="button"
             onClick={() => dialogRef.current?.close()}
-            className="absolute right-[clamp(16px,3vw,40px)] top-[clamp(16px,3vw,40px)] z-10 inline-flex h-10 w-10 items-center justify-center rounded-pill bg-paper font-mono text-label uppercase text-ink focus-visible:focus-ring"
-            aria-label="Cerrar visor"
+            aria-label={closeLabel}
+            className="absolute top-(--margin-page) right-(--margin-page) z-10 inline-flex size-10 items-center justify-center rounded-pill bg-paper font-mono-label text-ink after:absolute after:-inset-1 focus-visible:focus-ring"
           >
             ×
           </button>
-          <div className="relative aspect-[4/5] w-full overflow-hidden bg-ink">
+          <figure ref={figureRef} className="flex flex-col gap-4">
+            <p id={titleId} className="sr-only">
+              {photo.alt}
+            </p>
             <Image
               src={photo.src}
               alt={photo.alt}
               width={photo.width}
               height={photo.height}
-              className="h-full w-full object-cover"
-              sizes="90vw"
+              sizes="(min-width: 1024px) 45rem, 90vw"
+              className="aspect-4/5 h-[min(80svh,112.5vw,56rem)] w-auto bg-ink object-cover"
               priority
             />
-          </div>
-          {photo.captionPending ? null : (
-            <figcaption className="font-mono text-label uppercase text-paper">
-              {photo.caption}
-            </figcaption>
-          )}
-        </figure>
+            {photo.caption ? (
+              <figcaption className="font-mono-label text-paper">
+                {photo.caption}
+              </figcaption>
+            ) : null}
+          </figure>
+        </div>
       ) : null}
     </dialog>
   );

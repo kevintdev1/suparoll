@@ -1,5 +1,5 @@
 import { homeContent } from "@/content/home";
-import { ManifestoReveal } from "../scenes/ManifestoReveal";
+import { RevealText } from "@/shared/components/ui/RevealText";
 
 export function Manifesto() {
   const { id, body, accentWord } = homeContent.manifesto;
@@ -8,10 +8,15 @@ export function Manifesto() {
     <section
       id={id}
       aria-label="Manifiesto"
-      className="flex min-h-[60svh] flex-col justify-center border-b border-paper-2 px-[clamp(16px,3vw,40px)] py-16"
+      className="flex min-h-[60svh] flex-col justify-center border-b border-paper-2 page-margin py-16"
     >
       <div className="prose-width">
-        <ManifestoReveal body={body} accentWord={accentWord} />
+        <RevealText
+          accentWord={accentWord}
+          className="font-display text-h2 text-ink"
+        >
+          {body}
+        </RevealText>
       </div>
     </section>
   );
