@@ -1,3 +1,4 @@
+import { heroScene } from "@/content/hero";
 import { homeContent } from "@/content/home";
 import {
   HeroCamera,
@@ -33,6 +34,7 @@ export function Hero() {
 
   return (
     <HeroCamera
+      scene={heroScene}
       wordmark={hero.wordmark}
       scrollLabel={hero.scrollLabel}
       cornerLabels={hero.cornerLabels}

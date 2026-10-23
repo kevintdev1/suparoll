@@ -1,11 +1,10 @@
 import type { SequenceVariant } from "@/shared/lib/assets";
 import type { Rect, Size } from "./hero-geometry";
 
-const CONCURRENCY = 8;
+const CONCURRENCY = 6;
 const FIRST_PASS_STEP = 4;
 const FRAME_PATTERN_TOKEN = /%0(\d+)d/;
 
-/** Rutas de los frames a partir del patrón del manifest ("%04d.webp", 1-indexado). */
 export function buildFrameUrls(variant: SequenceVariant): string[] {
   const match = FRAME_PATTERN_TOKEN.exec(variant.pattern);
 
@@ -29,136 +28,224 @@ export function buildFrameUrls(variant: SequenceVariant): string[] {
   return urls;
 }
 
-export type FrameLoader = {
-  count: number;
-  start: (onProgress?: (loaded: number, total: number) => void) => void;
-  frameAt: (index: number) => HTMLImageElement | undefined;
-  dispose: () => void;
+export type LoadedFrame = {
+  index: number;
+  source: HTMLImageElement;
 };
 
-/** Orden de carga: primero uno de cada cuatro, luego el resto. */
-function loadOrder(count: number): number[] {
-  const order: number[] = [];
-  const queued = new Uint8Array(count);
+export type FrameProgress = {
+  loaded: number;
+  total: number;
+  firstPassLoaded: number;
+  firstPassTotal: number;
+};
+
+export type FrameLoader = {
+  count: number;
+  frameAt: (index: number) => LoadedFrame | undefined;
+  subscribe: (listener: (progress: FrameProgress) => void) => () => void;
+};
+
+type LoaderEntry = {
+  loader: FrameLoader;
+  dispose: () => void;
+  refs: number;
+};
+
+const loaders = new Map<string, LoaderEntry>();
+
+function firstPassIndices(count: number): number[] {
+  const indices: number[] = [];
 
   for (let index = 0; index < count; index += FIRST_PASS_STEP) {
-    order.push(index);
+    indices.push(index);
+  }
+
+  if (count > 0 && indices[indices.length - 1] !== count - 1) {
+    indices.push(count - 1);
+  }
+
+  return indices;
+}
+
+function loadOrder(count: number, firstPass: number[]): number[] {
+  const queued = new Uint8Array(count);
+
+  for (const index of firstPass) {
     queued[index] = 1;
   }
 
-  const last = count - 1;
-
-  if (!queued[last]) {
-    order.push(last);
-    queued[last] = 1;
-  }
+  const rest: number[] = [];
 
   for (let index = 0; index < count; index++) {
     if (!queued[index]) {
-      order.push(index);
+      rest.push(index);
     }
   }
 
-  return order;
+  return [...firstPass, ...rest];
 }
 
-export function createFrameLoader(urls: string[]): FrameLoader {
+async function decodeImage(
+  url: string,
+  priority: "high" | "low",
+): Promise<HTMLImageElement | null> {
+  const image = new Image();
+  image.decoding = "async";
+  image.fetchPriority = priority;
+  image.src = url;
+
+  try {
+    await image.decode();
+    return image;
+  } catch {
+    return null;
+  }
+}
+
+function createFrameLoader(urls: string[]): LoaderEntry {
   const count = urls.length;
   const images = new Array<HTMLImageElement | undefined>(count);
-  const loadedFlags = new Uint8Array(count);
-  let loaded = 0;
+  const firstPass = firstPassIndices(count);
+  const firstPassSet = new Set(firstPass);
+  const order = loadOrder(count, firstPass);
+  const listeners = new Set<(progress: FrameProgress) => void>();
+  const progress: FrameProgress = {
+    loaded: 0,
+    total: count,
+    firstPassLoaded: 0,
+    firstPassTotal: firstPass.length,
+  };
+  let cursor = 0;
   let disposed = false;
-  let started = false;
 
-  function frameAt(index: number): HTMLImageElement | undefined {
-    if (loadedFlags[index]) {
-      return images[index];
+  const notify = () => {
+    for (const listener of listeners) {
+      listener(progress);
     }
+  };
 
-    for (let offset = 1; offset < count; offset++) {
-      const before = index - offset;
-      const after = index + offset;
+  const frameAt = (index: number): LoadedFrame | undefined => {
+    for (let offset = 0; offset < count; offset++) {
+      const before = images[index - offset];
 
-      if (before >= 0 && loadedFlags[before]) {
-        return images[before];
+      if (before) {
+        return { index: index - offset, source: before };
       }
 
-      if (after < count && loadedFlags[after]) {
-        return images[after];
+      const after = images[index + offset];
+
+      if (after) {
+        return { index: index + offset, source: after };
       }
     }
 
     return undefined;
-  }
+  };
 
-  function start(onProgress?: (loaded: number, total: number) => void) {
-    if (started) {
+  const next = (): void => {
+    if (disposed || cursor >= order.length) {
       return;
     }
 
-    started = true;
-    const order = loadOrder(count);
-    let cursor = 0;
+    const index = order[cursor];
+    cursor += 1;
 
-    const next = (): void => {
-      if (disposed || cursor >= order.length) {
+    void decodeImage(
+      urls[index],
+      firstPassSet.has(index) ? "high" : "low",
+    ).then((image) => {
+      if (disposed) {
         return;
       }
 
-      const index = order[cursor];
-      cursor += 1;
-
-      const image = new Image();
-      image.decoding = "async";
-      image.src = urls[index];
-
-      const done = () => {
-        if (disposed) {
-          return;
-        }
-
-        loaded += 1;
-        onProgress?.(loaded, count);
-        next();
-      };
-
-      image.onload = () => {
+      if (image) {
         images[index] = image;
-        loadedFlags[index] = 1;
-        done();
-      };
+      }
 
-      image.onerror = done;
-    };
+      progress.loaded += 1;
 
-    for (let worker = 0; worker < CONCURRENCY; worker++) {
+      if (firstPassSet.has(index)) {
+        progress.firstPassLoaded += 1;
+      }
+
+      notify();
       next();
-    }
+    });
+  };
+
+  for (let worker = 0; worker < CONCURRENCY; worker++) {
+    next();
   }
 
   return {
-    count,
-    start,
-    frameAt,
+    refs: 0,
+    loader: {
+      count,
+      frameAt,
+      subscribe(listener) {
+        listeners.add(listener);
+        listener(progress);
+
+        return () => {
+          listeners.delete(listener);
+        };
+      },
+    },
     dispose() {
       disposed = true;
+      listeners.clear();
+      images.fill(undefined);
+    },
+  };
+}
 
-      for (const image of images) {
-        if (image) {
-          image.onload = null;
-          image.onerror = null;
-        }
+export function acquireFrameLoader(urls: string[]): {
+  loader: FrameLoader;
+  release: () => void;
+} {
+  const key = urls.join("|");
+  let entry = loaders.get(key);
+
+  if (!entry) {
+    entry = createFrameLoader(urls);
+    loaders.set(key, entry);
+  }
+
+  const owned = entry;
+  let released = false;
+
+  owned.refs += 1;
+
+  return {
+    loader: owned.loader,
+    release() {
+      if (released) {
+        return;
+      }
+
+      released = true;
+      owned.refs -= 1;
+
+      if (owned.refs === 0) {
+        owned.dispose();
+        loaders.delete(key);
       }
     },
   };
 }
 
+export type CanvasQuality = {
+  maxDpr: number;
+  smoothing: ImageSmoothingQuality;
+};
+
 export function resizeCanvas(
   canvas: HTMLCanvasElement,
   viewport: Size,
-  maxDpr = 2,
+  quality: CanvasQuality,
 ): CanvasRenderingContext2D | null {
-  const dpr = Math.min(window.devicePixelRatio || 1, maxDpr);
+  const dpr = Math.min(window.devicePixelRatio || 1, quality.maxDpr);
   const width = Math.round(viewport.width * dpr);
   const height = Math.round(viewport.height * dpr);
 
@@ -175,34 +262,29 @@ export function resizeCanvas(
 
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.imageSmoothingEnabled = true;
-  ctx.imageSmoothingQuality = "high";
+  ctx.imageSmoothingQuality = quality.smoothing;
 
   return ctx;
 }
 
-/**
- * Dibuja el frame en `rect`. Si queda hueco arriba o abajo, estira la primera y
- * la última fila de la imagen: el fondo del video tiene degradado y así no
- * aparece ningún borde.
- */
 export function drawFrame(
   ctx: CanvasRenderingContext2D,
-  image: HTMLImageElement,
+  source: HTMLImageElement,
   rect: Rect,
   viewport: Size,
 ): void {
-  const source = { width: image.naturalWidth, height: image.naturalHeight };
+  const size = { width: source.naturalWidth, height: source.naturalHeight };
 
-  if (source.width === 0 || source.height === 0) {
+  if (size.width === 0 || size.height === 0) {
     return;
   }
 
   if (rect.y > 0) {
     ctx.drawImage(
-      image,
+      source,
       0,
       0,
-      source.width,
+      size.width,
       1,
       rect.x,
       0,
@@ -215,10 +297,10 @@ export function drawFrame(
 
   if (bottom < viewport.height) {
     ctx.drawImage(
-      image,
+      source,
       0,
-      source.height - 1,
-      source.width,
+      size.height - 1,
+      size.width,
       1,
       rect.x,
       bottom - 1,
@@ -227,5 +309,5 @@ export function drawFrame(
     );
   }
 
-  ctx.drawImage(image, rect.x, rect.y, rect.width, rect.height);
+  ctx.drawImage(source, rect.x, rect.y, rect.width, rect.height);
 }

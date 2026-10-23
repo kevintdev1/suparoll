@@ -156,3 +156,26 @@ export function insetFromRect(
 
   return `inset(${top.toFixed(1)}px ${right.toFixed(1)}px ${bottom.toFixed(1)}px ${left.toFixed(1)}px round ${Math.max(radius, 0).toFixed(1)}px)`;
 }
+
+export type ClipShape = { rect: Rect; radius: number };
+
+export function computeClipShape(
+  ocular: Rect,
+  ocularRadius: number,
+  viewport: Size,
+  card: { rect: Rect; radius: number },
+  reveal: number,
+  cardProgress: number,
+): ClipShape {
+  const opened = lerpRect(ocular, fullBleedRect(viewport), reveal);
+  const openedRadius = lerp(ocularRadius, 0, reveal);
+
+  if (cardProgress <= 0) {
+    return { rect: opened, radius: openedRadius };
+  }
+
+  return {
+    rect: lerpRect(opened, card.rect, cardProgress),
+    radius: lerp(openedRadius, card.radius, cardProgress),
+  };
+}
