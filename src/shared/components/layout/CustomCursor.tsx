@@ -2,111 +2,111 @@
 
 import { useEffect, useRef, useState } from "react";
 import { gsap } from "@/shared/lib/motion/gsap";
-import { MOTION_REDUCED } from "@/shared/lib/motion/media";
-
-const CURSOR_LABELS: Record<string, string> = {
-  view: "Ver",
-  drag: "Arrastra",
-  slide: "Desliza",
-};
+import { MEDIA_FINE_POINTER, MOTION_OK } from "@/shared/lib/motion/media";
+import { dur, ease } from "@/shared/lib/motion/tokens";
 
 const NATIVE_CURSOR_SELECTOR =
   'input, textarea, select, button, a, [contenteditable="true"], [data-native-cursor]';
+const FOLLOW_DURATION = 0.35;
+const EXPANDED_SCALE = 64 / 12;
 
-export function CustomCursor() {
+type CustomCursorProps = {
+  labels: Record<string, string>;
+};
+
+function resolveMode(target: EventTarget | null): string {
+  if (!(target instanceof Element)) {
+    return "default";
+  }
+
+  if (target.closest(NATIVE_CURSOR_SELECTOR)) {
+    return "native";
+  }
+
+  return (
+    target.closest<HTMLElement>("[data-cursor]")?.dataset.cursor ?? "default"
+  );
+}
+
+export function CustomCursor({ labels }: CustomCursorProps) {
   const rootRef = useRef<HTMLDivElement>(null);
+  const dotRef = useRef<HTMLSpanElement>(null);
   const labelRef = useRef<HTMLSpanElement>(null);
   const [enabled, setEnabled] = useState(false);
 
   useEffect(() => {
-    const hoverCapable = window.matchMedia(
-      "(hover: hover) and (pointer: fine)",
-    );
-    const reduced = window.matchMedia(MOTION_REDUCED);
+    const query = window.matchMedia(`${MEDIA_FINE_POINTER} and ${MOTION_OK}`);
+    const update = () => setEnabled(query.matches);
 
-    const updateEnabled = () => {
-      setEnabled(hoverCapable.matches && !reduced.matches);
-    };
-
-    updateEnabled();
-    hoverCapable.addEventListener("change", updateEnabled);
-    reduced.addEventListener("change", updateEnabled);
-
-    return () => {
-      hoverCapable.removeEventListener("change", updateEnabled);
-      reduced.removeEventListener("change", updateEnabled);
-    };
+    update();
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
   }, []);
 
   useEffect(() => {
-    if (!enabled) {
-      return;
-    }
-
     const root = rootRef.current;
+    const dot = dotRef.current;
     const labelEl = labelRef.current;
 
-    if (!root || !labelEl) {
+    if (!enabled || !root || !dot || !labelEl) {
       return;
     }
 
-    const xTo = gsap.quickTo(root, "x", { duration: 0.35, ease: "power3.out" });
-    const yTo = gsap.quickTo(root, "y", { duration: 0.35, ease: "power3.out" });
+    const xTo = gsap.quickTo(root, "x", {
+      duration: FOLLOW_DURATION,
+      ease: ease.out,
+    });
+    const yTo = gsap.quickTo(root, "y", {
+      duration: FOLLOW_DURATION,
+      ease: ease.out,
+    });
+    let currentMode = "";
 
-    const setDefault = () => {
+    const applyMode = (mode: string) => {
+      currentMode = mode;
+      const label = labels[mode] ?? "";
+
       gsap.to(root, {
-        width: 12,
-        height: 12,
-        duration: 0.25,
-        ease: "power3.out",
+        autoAlpha: mode === "native" ? 0 : 1,
+        duration: dur.micro,
+        overwrite: "auto",
       });
-      labelEl.textContent = "";
-      gsap.to(labelEl, { autoAlpha: 0, duration: 0.15 });
+      gsap.to(dot, {
+        scale: label ? EXPANDED_SCALE : 1,
+        duration: dur.micro,
+        ease: ease.out,
+        overwrite: "auto",
+      });
+
+      if (label) {
+        labelEl.textContent = label;
+      }
+
+      gsap.to(labelEl, {
+        autoAlpha: label ? 1 : 0,
+        duration: dur.micro,
+        overwrite: "auto",
+      });
     };
 
     const onMove = (event: MouseEvent) => {
       xTo(event.clientX);
       yTo(event.clientY);
 
-      const target = event.target;
+      const mode = resolveMode(event.target);
 
-      if (!(target instanceof Element)) {
-        setDefault();
-        root.style.opacity = "1";
-        return;
+      if (mode !== currentMode) {
+        applyMode(mode);
       }
-
-      if (target.closest(NATIVE_CURSOR_SELECTOR)) {
-        root.style.opacity = "0";
-        return;
-      }
-
-      root.style.opacity = "1";
-
-      const cursorTarget = target.closest<HTMLElement>("[data-cursor]");
-      const mode = cursorTarget?.dataset.cursor ?? "default";
-
-      if (mode === "default") {
-        setDefault();
-        return;
-      }
-
-      gsap.to(root, {
-        width: 64,
-        height: 64,
-        duration: 0.25,
-        ease: "power3.out",
-      });
-      labelEl.textContent = CURSOR_LABELS[mode] ?? "";
-      gsap.to(labelEl, { autoAlpha: 1, duration: 0.15 });
     };
 
-    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mousemove", onMove, { passive: true });
 
     return () => {
       window.removeEventListener("mousemove", onMove);
+      gsap.killTweensOf([root, dot, labelEl]);
     };
-  }, [enabled]);
+  }, [enabled, labels]);
 
   if (!enabled) {
     return null;
@@ -116,12 +116,15 @@ export function CustomCursor() {
     <div
       ref={rootRef}
       aria-hidden="true"
-      className="pointer-events-none fixed top-0 left-0 z-[90] flex -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-ink mix-blend-difference"
-      style={{ width: 12, height: 12 }}
+      className="pointer-events-none invisible fixed top-0 left-0 z-90 mix-blend-difference"
     >
       <span
+        ref={dotRef}
+        className="absolute size-3 -translate-1/2 rounded-full bg-paper"
+      />
+      <span
         ref={labelRef}
-        className="font-mono text-[10px] uppercase tracking-wider text-paper opacity-0"
+        className="invisible absolute -translate-1/2 font-mono-label whitespace-nowrap text-ink"
       />
     </div>
   );

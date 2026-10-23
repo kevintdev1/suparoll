@@ -1,254 +1,142 @@
 "use client";
 
-import { Menu, ShoppingBag, X } from "lucide-react";
-import { useCallback, useEffect, useId, useRef, useState } from "react";
-import { site } from "@/content/site";
-import { useCart } from "@/features/commerce/hooks/useCart";
-import { formatPrice } from "@/features/commerce/lib";
-import { Link } from "@/shared/components/ui/Link";
+import { Menu, X } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { type ReactNode, useEffect, useId, useRef, useState } from "react";
+import { Link, type LinkTone } from "@/shared/components/ui/Link";
+import { useElementInView } from "@/shared/hooks/useElementInView";
+import { useFocusWithin } from "@/shared/hooks/useFocusWithin";
+import { useScrollDirection } from "@/shared/hooks/useScrollDirection";
+import { useScrollProgress } from "@/shared/hooks/useScrollProgress";
+import { useSectionTheme } from "@/shared/hooks/useSectionTheme";
 import { gsap } from "@/shared/lib/motion/gsap";
-import { getLenis } from "@/shared/lib/motion/scroller";
+import { MOTION_REDUCED } from "@/shared/lib/motion/media";
+import { lockScroll } from "@/shared/lib/motion/scroll-lock";
 import { dur, ease } from "@/shared/lib/motion/tokens";
 
-const SCROLL_DELTA = 8;
+export type NavbarLink = {
+  label: string;
+  href: string;
+};
 
-export function Navbar() {
+export type NavbarLabels = {
+  primaryNav: string;
+  mobileNav: string;
+  menu: string;
+  openMenu: string;
+  closeMenu: string;
+};
+
+type NavbarProps = {
+  brand: string;
+  links: NavbarLink[];
+  labels: NavbarLabels;
+  cartSlot?: ReactNode;
+};
+
+const ICON_BUTTON =
+  "inline-flex size-11 items-center justify-center rounded-full border border-current/30 focus-visible:focus-ring";
+
+export function Navbar(props: NavbarProps) {
+  const pathname = usePathname();
+
+  return <NavbarContent key={pathname} pathname={pathname} {...props} />;
+}
+
+function NavbarContent({
+  brand,
+  links,
+  labels,
+  cartSlot,
+  pathname,
+}: NavbarProps & { pathname: string }) {
   const menuId = useId();
   const headerRef = useRef<HTMLElement>(null);
   const progressRef = useRef<HTMLSpanElement>(null);
-  const { cart, isOpen, toggleCart } = useCart();
+  const menuRef = useRef<HTMLDialogElement>(null);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [theme, setTheme] = useState<"light" | "dark">("light");
-  const [hidden, setHidden] = useState(false);
-  const [heroVisible, setHeroVisible] = useState(true);
-  const lastScrollRef = useRef(0);
 
-  const count = cart.itemCount;
-  const countLabel = count > 0 ? ` (${count})` : "";
+  const direction = useScrollDirection();
+  const heroVisible = useElementInView("hero");
+  const theme = useSectionTheme();
+  const focusInside = useFocusWithin(headerRef);
+  useScrollProgress(progressRef);
 
-  const closeMenu = useCallback(() => {
-    setMenuOpen(false);
-  }, []);
-
-  const openMenu = useCallback(() => {
-    setMenuOpen(true);
-  }, []);
+  const hidden = direction === "down" && !heroVisible && !focusInside;
 
   useEffect(() => {
-    const header = headerRef.current;
-
-    if (!header) {
-      return;
-    }
-
-    const onScroll = () => {
-      const lenis = getLenis();
-      const scrollY = lenis?.scroll ?? window.scrollY;
-      const delta = scrollY - lastScrollRef.current;
-
-      if (Math.abs(delta) >= SCROLL_DELTA) {
-        setHidden(delta > 0 && !heroVisible);
-        lastScrollRef.current = scrollY;
-      }
-
-      const docHeight =
-        document.documentElement.scrollHeight - window.innerHeight;
-      const progress = docHeight > 0 ? scrollY / docHeight : 0;
-
-      if (progressRef.current) {
-        progressRef.current.style.transform = `scaleX(${Math.min(1, Math.max(0, progress))})`;
-      }
-    };
-
-    window.addEventListener("scroll", onScroll, { passive: true });
-
-    const lenis = getLenis();
-    lenis?.on("scroll", onScroll);
-
-    onScroll();
-
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-    };
-  }, [heroVisible]);
-
-  useEffect(() => {
-    const hero = document.getElementById("hero");
-
-    if (!hero) {
-      setHeroVisible(false);
-      return;
-    }
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        setHeroVisible(entry?.isIntersecting ?? false);
-      },
-      { threshold: 0.05 },
-    );
-
-    observer.observe(hero);
-
-    return () => observer.disconnect();
-  }, []);
-
-  useEffect(() => {
-    const sections = document.querySelectorAll<HTMLElement>("[data-theme]");
-
-    if (sections.length === 0) {
-      return;
-    }
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter((entry) => entry.isIntersecting)
-          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-
-        if (visible) {
-          const nextTheme = visible.target.getAttribute("data-theme");
-
-          if (nextTheme === "dark" || nextTheme === "light") {
-            setTheme(nextTheme);
-          }
-        }
-      },
-      {
-        root: null,
-        rootMargin: "-20% 0px -70% 0px",
-        threshold: [0, 0.25, 0.5],
-      },
-    );
-
-    for (const section of sections) {
-      observer.observe(section);
-    }
-
-    return () => observer.disconnect();
-  }, []);
-
-  useEffect(() => {
-    const header = headerRef.current;
-
-    if (!header) {
-      return;
-    }
-
-    gsap.to(header, {
+    gsap.to(headerRef.current, {
       yPercent: hidden ? -100 : 0,
-      duration: dur.base,
+      duration: window.matchMedia(MOTION_REDUCED).matches ? 0 : dur.base,
       ease: ease.out,
       overwrite: "auto",
     });
   }, [hidden]);
 
   useEffect(() => {
-    if (!menuOpen) {
-      document.body.style.overflow = "";
+    const dialog = menuRef.current;
+
+    if (!dialog || !menuOpen) {
       return;
     }
 
-    document.body.style.overflow = "hidden";
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        closeMenu();
-      }
-    };
-
-    window.addEventListener("keydown", onKeyDown);
+    dialog.showModal();
+    const release = lockScroll();
 
     return () => {
-      document.body.style.overflow = "";
-      window.removeEventListener("keydown", onKeyDown);
+      release();
+      dialog.close();
     };
-  }, [menuOpen, closeMenu]);
+  }, [menuOpen]);
 
-  const isDark = theme === "dark";
-  const textClass = isDark ? "text-paper" : "text-ink";
-  const mutedClass = isDark ? "text-paper/70" : "text-ink-2";
-  const borderClass = isDark ? "border-paper/20" : "border-paper-2";
+  const linkTone: LinkTone = theme === "dark" ? "inverse" : "ink";
+  const mutedTone: LinkTone = theme === "dark" ? "inverse-muted" : "muted";
 
   return (
     <>
       <header
         ref={headerRef}
-        className="fixed inset-x-0 top-0 z-[70] will-change-transform"
+        className="fixed inset-x-0 top-0 z-70 will-change-transform"
       >
         <div
-          className={`mx-auto flex h-16 max-w-[1600px] items-center justify-between px-[clamp(16px,3vw,40px)] ${textClass}`}
+          className={`content-max page-margin flex h-16 items-center justify-between ${theme === "dark" ? "text-paper" : "text-ink"}`}
         >
           <Link
             href="/"
-            className={`font-display text-body tracking-tight ${textClass} hover:opacity-80`}
+            tone={linkTone}
+            className="inline-flex min-h-11 items-center font-display text-body"
           >
-            {site.brand}
+            {brand}
           </Link>
 
           <nav
-            aria-label="Principal"
+            aria-label={labels.primaryNav}
             className="hidden items-center gap-8 md:flex"
           >
-            {site.navbar.links.map((link) => (
+            {links.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
-                className={`font-mono text-label uppercase tracking-wider transition-colors ${mutedClass} ${isDark ? "hover:text-paper" : "hover:text-ink"}`}
+                tone={mutedTone}
+                aria-current={pathname === link.href ? "page" : undefined}
+                className="inline-flex min-h-11 items-center font-mono-label aria-[current=page]:text-current"
               >
                 {link.label}
               </Link>
             ))}
-
-            <button
-              type="button"
-              onClick={toggleCart}
-              aria-expanded={isOpen}
-              aria-controls="cart-drawer"
-              className={`inline-flex items-center gap-2 rounded-pill border ${borderClass} px-4 py-2 ${textClass} focus-visible:focus-ring`}
-            >
-              <ShoppingBag aria-hidden="true" className="size-4" />
-              <span className="font-mono text-label uppercase tracking-wider">
-                {site.navbar.cartLabel}
-                <span data-cart-count>{countLabel}</span>
-              </span>
-              <span className="sr-only">
-                {count > 0
-                  ? `${count} ${count === 1 ? "artículo" : "artículos"}. Total ${formatPrice(cart.total, cart.lines[0]?.currency ?? null)}`
-                  : site.microcopy.emptyCart}
-              </span>
-            </button>
           </nav>
 
-          <div className="flex items-center gap-3 md:hidden">
+          <div className="flex items-center gap-3">
+            {cartSlot}
             <button
               type="button"
-              onClick={toggleCart}
-              aria-expanded={isOpen}
-              aria-controls="cart-drawer"
-              className={`inline-flex size-10 items-center justify-center rounded-full border ${borderClass} ${textClass} focus-visible:focus-ring`}
-            >
-              <ShoppingBag aria-hidden="true" className="size-4" />
-              <span className="sr-only">
-                {site.navbar.cartLabel}
-                {countLabel}
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={menuOpen ? closeMenu : openMenu}
+              onClick={() => setMenuOpen(true)}
               aria-expanded={menuOpen}
               aria-controls={menuId}
-              className={`inline-flex size-10 items-center justify-center rounded-full border ${borderClass} ${textClass} focus-visible:focus-ring`}
+              className={`${ICON_BUTTON} md:hidden`}
             >
-              {menuOpen ? (
-                <X aria-hidden="true" className="size-5" />
-              ) : (
-                <Menu aria-hidden="true" className="size-5" />
-              )}
-              <span className="sr-only">
-                {menuOpen ? "Cerrar menú" : "Abrir menú"}
-              </span>
+              <Menu aria-hidden="true" className="size-5" />
+              <span className="sr-only">{labels.openMenu}</span>
             </button>
           </div>
         </div>
@@ -256,32 +144,46 @@ export function Navbar() {
         <span
           ref={progressRef}
           aria-hidden="true"
-          className="absolute inset-x-0 bottom-0 block h-px origin-left scale-x-0 bg-shutter"
+          className="absolute inset-x-0 bottom-0 h-px origin-left scale-x-0 bg-shutter"
         />
       </header>
 
-      {menuOpen ? (
-        <div
-          id={menuId}
-          role="dialog"
-          aria-modal="true"
-          aria-label="Menú de navegación"
-          className="fixed inset-0 z-[80] flex flex-col bg-paper px-[clamp(16px,3vw,40px)] py-24"
-        >
-          <nav aria-label="Menú móvil" className="mt-16 flex flex-col gap-6">
-            {site.navbar.links.map((link) => (
+      <dialog
+        ref={menuRef}
+        id={menuId}
+        aria-label={labels.menu}
+        className="dialog-full"
+        onClose={() => setMenuOpen(false)}
+      >
+        <div className="size-full overflow-y-auto bg-paper text-ink">
+          <div className="page-margin flex h-16 items-center justify-end">
+            <button
+              type="button"
+              onClick={() => setMenuOpen(false)}
+              className={ICON_BUTTON}
+            >
+              <X aria-hidden="true" className="size-5" />
+              <span className="sr-only">{labels.closeMenu}</span>
+            </button>
+          </div>
+          <nav
+            aria-label={labels.mobileNav}
+            className="page-margin mt-16 flex flex-col gap-6"
+          >
+            {links.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
-                onClick={closeMenu}
-                className="font-display text-h2 text-ink focus-visible:focus-ring"
+                aria-current={pathname === link.href ? "page" : undefined}
+                onClick={() => setMenuOpen(false)}
+                className="font-display text-h2"
               >
                 {link.label}
               </Link>
             ))}
           </nav>
         </div>
-      ) : null}
+      </dialog>
     </>
   );
 }

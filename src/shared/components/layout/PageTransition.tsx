@@ -7,25 +7,29 @@ import {
   use,
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from "react";
 import { gsap } from "@/shared/lib/motion/gsap";
+import { MOTION_REDUCED } from "@/shared/lib/motion/media";
 import {
   focusPageHeading,
+  killDetachedScrollTriggers,
   killPageScrollTriggers,
   refreshScrollTriggers,
   resetScroll,
 } from "@/shared/lib/motion/navigation-cleanup";
 import { dur, ease } from "@/shared/lib/motion/tokens";
 import {
-  getPageLabel,
   isInternalHref,
   normalizePath,
+  type PageLabels,
+  resolvePageLabel,
 } from "@/shared/lib/navigation";
 
 type PageTransitionContextValue = {
-  navigate: (href: string, label?: string) => void;
+  navigate: (href: string) => void;
 };
 
 const PageTransitionContext = createContext<PageTransitionContextValue | null>(
@@ -38,6 +42,7 @@ export function usePageTransition(): PageTransitionContextValue | null {
 
 type PageTransitionProviderProps = {
   children: ReactNode;
+  labels: PageLabels;
 };
 
 function runTimeline(
@@ -51,29 +56,28 @@ function runTimeline(
 
 export function PageTransitionProvider({
   children,
+  labels,
 }: PageTransitionProviderProps) {
   const router = useRouter();
   const pathname = usePathname();
   const panelRef = useRef<HTMLDivElement>(null);
   const labelRef = useRef<HTMLParagraphElement>(null);
   const busyRef = useRef(false);
-  const pendingPathRef = useRef<string | null>(null);
+  const coveredRef = useRef(false);
+  const previousPathRef = useRef(pathname);
   const [active, setActive] = useState(false);
 
   const animateCover = useCallback(async (label: string) => {
     const panel = panelRef.current;
     const labelEl = labelRef.current;
 
-    if (!panel) {
+    if (!panel || !labelEl) {
       return;
     }
 
     setActive(true);
-
-    if (labelEl) {
-      labelEl.textContent = label;
-    }
-
+    coveredRef.current = true;
+    labelEl.textContent = label;
     gsap.set(panel, { yPercent: 100, autoAlpha: 1 });
     gsap.set(labelEl, { autoAlpha: 0, y: 16 });
 
@@ -89,55 +93,48 @@ export function PageTransitionProvider({
   const animateReveal = useCallback(async () => {
     const panel = panelRef.current;
 
-    if (!panel) {
-      setActive(false);
-      return;
+    if (panel && coveredRef.current) {
+      await runTimeline((tl) => {
+        tl.to(panel, { yPercent: -100, duration: dur.page, ease: ease.inOut });
+      });
+      gsap.set(panel, { autoAlpha: 0, clearProps: "transform" });
     }
 
-    await runTimeline((tl) => {
-      tl.to(panel, {
-        yPercent: -100,
-        duration: dur.page,
-        ease: ease.inOut,
-      });
-    });
-
-    gsap.set(panel, { autoAlpha: 0, clearProps: "transform" });
+    coveredRef.current = false;
     setActive(false);
   }, []);
 
   const navigate = useCallback(
-    async (href: string, label?: string) => {
-      if (busyRef.current) {
-        return;
-      }
-
+    async (href: string) => {
       const path = normalizePath(href);
 
-      if (path === pathname) {
+      if (busyRef.current || path === pathname) {
         return;
       }
 
       busyRef.current = true;
-      pendingPathRef.current = path;
 
-      await animateCover(label ?? getPageLabel(href));
+      if (!window.matchMedia(MOTION_REDUCED).matches) {
+        await animateCover(resolvePageLabel(labels, href));
+      }
+
       killPageScrollTriggers();
       router.push(href);
     },
-    [animateCover, pathname, router],
+    [animateCover, labels, pathname, router],
   );
 
   useEffect(() => {
-    if (!pendingPathRef.current || pathname !== pendingPathRef.current) {
+    if (previousPathRef.current === pathname) {
       return;
     }
 
-    pendingPathRef.current = null;
+    previousPathRef.current = pathname;
+    killDetachedScrollTriggers();
+    resetScroll();
+    refreshScrollTriggers();
 
     const finish = async () => {
-      resetScroll();
-      refreshScrollTriggers();
       await animateReveal();
       focusPageHeading();
       busyRef.current = false;
@@ -146,28 +143,15 @@ export function PageTransitionProvider({
     void finish();
   }, [pathname, animateReveal]);
 
-  useEffect(() => {
-    const onPopState = () => {
-      killPageScrollTriggers();
-      resetScroll();
-      requestAnimationFrame(() => {
-        refreshScrollTriggers();
-        focusPageHeading();
-      });
-    };
-
-    window.addEventListener("popstate", onPopState);
-
-    return () => window.removeEventListener("popstate", onPopState);
-  }, []);
+  const value = useMemo(() => ({ navigate }), [navigate]);
 
   return (
-    <PageTransitionContext value={{ navigate }}>
+    <PageTransitionContext value={value}>
       {children}
       <div
         ref={panelRef}
         aria-hidden={!active}
-        className="pointer-events-none fixed inset-0 z-[200] flex items-center justify-center bg-ink opacity-0"
+        className="pointer-events-none invisible fixed inset-0 z-200 flex items-center justify-center bg-ink"
       >
         <p ref={labelRef} className="font-display text-h2 text-paper" />
       </div>
@@ -176,15 +160,5 @@ export function PageTransitionProvider({
 }
 
 export function shouldTransitionHref(href: string): boolean {
-  if (!isInternalHref(href)) {
-    return false;
-  }
-
-  const path = normalizePath(href);
-
-  if (path.startsWith("/checkout")) {
-    return false;
-  }
-
-  return true;
+  return isInternalHref(href) && !normalizePath(href).startsWith("/checkout");
 }
