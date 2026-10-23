@@ -1,37 +1,55 @@
 "use client";
 
 import { type MouseEvent, useRef } from "react";
-import { MOTION_REDUCED } from "@/shared/lib/motion/media";
+import { MEDIA_FINE_POINTER, MOTION_OK } from "@/shared/lib/motion/media";
 
 const MAGNETIC_RADIUS = 80;
 const MAGNETIC_MAX = 8;
 
-export function useMagnetic(enabled: boolean) {
-  const ref = useRef<HTMLElement>(null);
+type Center = { x: number; y: number };
 
-  const onMouseMove = (event: MouseEvent<HTMLElement>) => {
-    if (!enabled) {
-      return;
+export function useMagnetic<T extends HTMLElement>(enabled: boolean) {
+  const ref = useRef<T>(null);
+  const centerRef = useRef<Center | null>(null);
+
+  const reset = () => {
+    centerRef.current = null;
+
+    if (ref.current) {
+      ref.current.style.transform = "";
     }
+  };
 
-    const reduced = window.matchMedia(MOTION_REDUCED).matches;
-    const coarse = window.matchMedia("(hover: none)").matches;
-
-    if (reduced || coarse) {
-      return;
-    }
-
+  const onMouseEnter = () => {
     const node = ref.current;
 
-    if (!node) {
+    if (
+      !enabled ||
+      !node ||
+      !window.matchMedia(`${MEDIA_FINE_POINTER} and ${MOTION_OK}`).matches
+    ) {
+      centerRef.current = null;
       return;
     }
 
+    node.style.transform = "";
     const rect = node.getBoundingClientRect();
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
-    const dx = event.clientX - centerX;
-    const dy = event.clientY - centerY;
+    centerRef.current = {
+      x: rect.left + rect.width / 2,
+      y: rect.top + rect.height / 2,
+    };
+  };
+
+  const onMouseMove = (event: MouseEvent<T>) => {
+    const node = ref.current;
+    const center = centerRef.current;
+
+    if (!node || !center) {
+      return;
+    }
+
+    const dx = event.clientX - center.x;
+    const dy = event.clientY - center.y;
     const distance = Math.hypot(dx, dy);
 
     if (distance > MAGNETIC_RADIUS) {
@@ -39,20 +57,12 @@ export function useMagnetic(enabled: boolean) {
       return;
     }
 
-    const pull = 1 - distance / MAGNETIC_RADIUS;
-    const x = (dx / distance || 0) * MAGNETIC_MAX * pull;
-    const y = (dy / distance || 0) * MAGNETIC_MAX * pull;
+    const pull = (1 - distance / MAGNETIC_RADIUS) * MAGNETIC_MAX;
+    const x = (dx / distance || 0) * pull;
+    const y = (dy / distance || 0) * pull;
 
     node.style.transform = `translate(${x}px, ${y}px)`;
   };
 
-  const onMouseLeave = () => {
-    const node = ref.current;
-
-    if (node) {
-      node.style.transform = "";
-    }
-  };
-
-  return { ref, onMouseMove, onMouseLeave };
+  return { ref, onMouseEnter, onMouseMove, onMouseLeave: reset };
 }
