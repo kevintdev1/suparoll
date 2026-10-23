@@ -11,24 +11,22 @@ import { Manifesto } from "@/features/landing/sections/Manifesto";
 import { Preloader } from "@/features/landing/sections/Preloader";
 import { Social } from "@/features/landing/sections/Social";
 import { Specs } from "@/features/landing/sections/Specs";
+import { SubscribeForm } from "@/features/newsletter";
 
 export default function Home() {
   return (
-    <>
-      <MainWrapper>
-        <Preloader />
-        <Hero />
-        <Manifesto />
-        <Gallery />
-        <Features />
-        <Develop />
-        <Specs />
-        <Colors />
-        <Social />
-        <Faq />
-        <CtaFinal />
-      </MainWrapper>
-      <Footer />
-    </>
+    <MainWrapper footer={<Footer newsletter={<SubscribeForm />} />}>
+      <Preloader />
+      <Hero />
+      <Manifesto />
+      <Gallery />
+      <Features />
+      <Develop />
+      <Specs />
+      <Colors />
+      <Social />
+      <Faq />
+      <CtaFinal />
+    </MainWrapper>
   );
 }

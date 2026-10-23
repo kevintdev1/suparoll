@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { Button } from "@/shared/components/ui/Button";
 import { GridOverlay } from "@/shared/components/ui/GridOverlay";
 import { Link } from "@/shared/components/ui/Link";
+import { MAIN_CONTENT_ID } from "@/shared/lib/navigation";
 
 export const metadata: Metadata = {
   title: "Styleguide — Suparoll",
@@ -97,14 +98,16 @@ export default function StyleguidePage() {
     <>
       <GridOverlay />
 
-      <main className="pb-32">
+      <main id={MAIN_CONTENT_ID} className="pb-32">
         <header className="section-gap page-margin">
           <div className="content-max">
             <p className="font-mono-label text-ink-2">
               Suparoll / Design system
             </p>
-            <h1 className="mt-4 font-display text-h1">Styleguide</h1>
-            <p className="mt-6 max-w-prose text-lead text-ink-2">
+            <h1 data-page-title className="mt-4 font-display text-h1">
+              Styleguide
+            </h1>
+            <p className="mt-6 prose-width text-lead text-ink-2">
               Tokens aprobados en{" "}
               <code className="font-mono text-small">
                 docs/02-direccion-de-arte.md
@@ -171,15 +174,15 @@ export default function StyleguidePage() {
 
         <Section title="Iconografía">
           <div className="flex flex-wrap items-center gap-8 text-ink">
-            <Camera aria-hidden="true" className="h-6 w-6" strokeWidth={1.5} />
+            <Camera aria-hidden="true" className="size-6" strokeWidth={1.5} />
             <ShoppingBag
               aria-hidden="true"
-              className="h-5 w-5"
+              className="size-5"
               strokeWidth={1.5}
             />
             <ArrowRight
               aria-hidden="true"
-              className="h-5 w-5"
+              className="size-5"
               strokeWidth={1.5}
             />
             <span className="font-mono-label text-ink-2">
@@ -190,7 +193,7 @@ export default function StyleguidePage() {
 
         <Section title="Marco instantánea">
           <div className="max-w-md">
-            <div className="instant-frame aspect-[4/5] bg-paper-2" />
+            <div className="instant-frame aspect-4/5 bg-paper-2" />
           </div>
         </Section>
 
