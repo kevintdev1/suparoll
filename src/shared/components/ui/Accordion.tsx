@@ -9,15 +9,19 @@ export type AccordionItem = {
   answer: string;
 };
 
+type AccordionHeading = "h2" | "h3" | "h4";
+
 type AccordionProps = {
   items: AccordionItem[];
   allowMultiple?: boolean;
+  headingLevel?: AccordionHeading;
   className?: string;
 };
 
 export function Accordion({
   items,
   allowMultiple = false,
+  headingLevel: Heading = "h3",
   className = "",
 }: AccordionProps) {
   const baseId = useId();
@@ -63,7 +67,7 @@ export function Accordion({
 
         return (
           <div key={item.id} className="py-2">
-            <h3>
+            <Heading>
               <button
                 id={headerId}
                 type="button"
@@ -81,17 +85,16 @@ export function Accordion({
                   className={`size-5 shrink-0 text-ink transition-transform duration-200 motion-reduce:transition-none ${isOpen ? "rotate-45" : ""}`}
                 />
               </button>
-            </h3>
-            <section
+            </Heading>
+            <div
               id={panelId}
-              aria-labelledby={headerId}
-              aria-hidden={!isOpen}
+              inert={!isOpen}
               className={`grid transition-[grid-template-rows] duration-300 motion-reduce:transition-none ${isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}
             >
               <div className="overflow-hidden">
                 <p className="pb-4 text-body text-ink-2">{item.answer}</p>
               </div>
-            </section>
+            </div>
           </div>
         );
       })}

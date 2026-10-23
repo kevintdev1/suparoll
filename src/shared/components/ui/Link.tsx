@@ -6,19 +6,29 @@ import {
   shouldTransitionHref,
   usePageTransition,
 } from "@/shared/components/layout/PageTransition";
-import { getPageLabel } from "@/shared/lib/navigation";
 
-type LinkProps = ComponentPropsWithoutRef<typeof NextLink> & {
-  ref?: Ref<HTMLAnchorElement>;
-  transition?: boolean;
+export type LinkTone = "ink" | "muted" | "inverse" | "inverse-muted";
+
+const TONES: Record<LinkTone, string> = {
+  ink: "text-ink",
+  muted: "text-ink-2 transition-colors hover:text-ink",
+  inverse: "text-paper",
+  "inverse-muted": "text-paper/70 transition-colors hover:text-paper",
 };
 
-function LinkInner({
+export type LinkProps = ComponentPropsWithoutRef<typeof NextLink> & {
+  ref?: Ref<HTMLAnchorElement>;
+  transition?: boolean;
+  tone?: LinkTone | null;
+  underline?: boolean;
+};
+
+export function Link({
   className = "",
-  children,
   href,
-  ref,
   transition = true,
+  tone = "ink",
+  underline = true,
   onClick,
   ...props
 }: LinkProps) {
@@ -47,22 +57,18 @@ function LinkInner({
     }
 
     event.preventDefault();
-    pageTransition.navigate(hrefString, getPageLabel(hrefString));
+    pageTransition.navigate(hrefString);
   };
+
+  const toneClass = tone ? TONES[tone] : "";
+  const underlineClass = underline ? "link-underline inline-block" : "";
 
   return (
     <NextLink
-      ref={ref}
       href={href}
-      className={`link-underline inline-block text-ink focus-visible:focus-ring ${className}`}
+      className={`${underlineClass} ${toneClass} focus-visible:focus-ring ${className}`}
       onClick={handleClick}
       {...props}
-    >
-      {children}
-    </NextLink>
+    />
   );
-}
-
-export function Link(props: LinkProps) {
-  return <LinkInner {...props} />;
 }

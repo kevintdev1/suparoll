@@ -3,11 +3,7 @@
 import { createElement, type ElementType, type ReactNode, useRef } from "react";
 import { getDebugMotion } from "@/shared/lib/motion/debug";
 import { gsap, SplitText, useGSAP } from "@/shared/lib/motion/gsap";
-import {
-  MOTION_DESKTOP,
-  MOTION_MOBILE,
-  MOTION_REDUCED,
-} from "@/shared/lib/motion/media";
+import { MOTION_OK, MOTION_REDUCED } from "@/shared/lib/motion/media";
 import {
   dur,
   ease,
@@ -15,6 +11,8 @@ import {
 } from "@/shared/lib/motion/tokens";
 
 type TextTag = "p" | "h1" | "h2" | "h3" | "span";
+
+const HEADING_TAGS = new Set<TextTag>(["h1", "h2", "h3"]);
 type SplitMode = "lines" | "words" | "chars";
 type TriggerMode = "scroll" | "mount";
 
@@ -93,6 +91,8 @@ export function RevealText({
   const textRef = useRef<HTMLElement>(null);
 
   const textContent = getTextContent(children);
+  const isHeading = HEADING_TAGS.has(as);
+  const srText = !isHeading && textContent ? textContent : null;
   const content = accentWord
     ? wrapAccentWord(textContent, accentWord)
     : children;
@@ -202,7 +202,7 @@ export function RevealText({
           type: split,
           mask: split,
           autoSplit: true,
-          aria: "auto",
+          aria: isHeading ? "auto" : "none",
           onSplit: (instance) => {
             activeTween?.kill();
             activeTween = animateSplit(instance);
@@ -212,17 +212,7 @@ export function RevealText({
 
       const mm = gsap.matchMedia();
 
-      mm.add(MOTION_DESKTOP, () => {
-        setupSplit();
-
-        return () => {
-          activeTween?.kill();
-          splitInstance?.revert();
-          splitInstance = null;
-        };
-      });
-
-      mm.add(MOTION_MOBILE, () => {
+      mm.add(MOTION_OK, () => {
         setupSplit();
 
         return () => {
@@ -258,18 +248,21 @@ export function RevealText({
         accentWord,
         scrollStart,
         textContent,
+        isHeading,
       ],
     },
   );
 
   return (
     <div ref={scopeRef}>
+      {srText ? <span className="sr-only">{srText}</span> : null}
       {createElement(
         as as ElementType,
         {
           ref: textRef,
           id,
           className,
+          "aria-hidden": srText ? true : undefined,
           "data-reveal": true,
           "data-anim": "reveal-text",
         },

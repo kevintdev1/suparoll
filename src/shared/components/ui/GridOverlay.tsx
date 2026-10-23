@@ -30,9 +30,9 @@ export function GridOverlay() {
   return (
     <div
       aria-hidden="true"
-      className="pointer-events-none fixed inset-0 z-[100] page-margin"
+      className="pointer-events-none fixed inset-0 z-100 page-margin"
     >
-      <div className="content-max grid h-full grid-cols-4 gap-[var(--gutter)] sm:grid-cols-8 md:grid-cols-12">
+      <div className="content-max grid h-full grid-cols-4 gap-(--gutter) sm:grid-cols-8 md:grid-cols-12">
         {(
           [
             "col-1",
@@ -51,7 +51,7 @@ export function GridOverlay() {
         ).map((colId, index) => (
           <div
             key={colId}
-            className={`bg-shutter/10 ${index >= 4 ? "hidden sm:block" : ""} ${index >= 8 ? "hidden md:block" : ""}`}
+            className={`bg-shutter/10 ${index >= 8 ? "hidden md:block" : index >= 4 ? "hidden sm:block" : ""}`}
           />
         ))}
       </div>

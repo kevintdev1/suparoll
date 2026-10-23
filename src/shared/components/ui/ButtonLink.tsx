@@ -1,48 +1,58 @@
 "use client";
 
-import type { ComponentPropsWithoutRef, RefObject } from "react";
-import { Link } from "@/shared/components/ui/Link";
+import type { MouseEvent } from "react";
+import { buttonClassName } from "@/shared/components/ui/button-styles";
+import { Link, type LinkProps } from "@/shared/components/ui/Link";
+import { RollLabel } from "@/shared/components/ui/RollLabel";
 import { useMagnetic } from "@/shared/hooks/useMagnetic";
 
-type ButtonLinkProps = ComponentPropsWithoutRef<typeof Link> & {
+type ButtonLinkVariant = "shutter" | "primary";
+
+type ButtonLinkProps = Omit<LinkProps, "tone" | "underline" | "ref"> & {
+  variant?: ButtonLinkVariant;
   magnetic?: boolean;
 };
 
+const SHUTTER =
+  "group relative inline-flex h-14 items-center justify-center overflow-hidden rounded-pill bg-shutter px-10 text-lead font-medium text-ink transition-transform duration-200 active:scale-[0.97] focus-visible:focus-ring md:h-16 md:px-12";
+
 export function ButtonLink({
+  variant = "shutter",
   magnetic = false,
   className = "",
+  onMouseEnter,
   onMouseMove,
   onMouseLeave,
   children,
   ...props
 }: ButtonLinkProps) {
-  const magneticHandlers = useMagnetic(magnetic);
+  const magneticHandlers = useMagnetic<HTMLAnchorElement>(magnetic);
+  const variantClass =
+    variant === "primary"
+      ? buttonClassName("primary", "ink", className)
+      : `${SHUTTER} ${className}`;
 
   return (
     <Link
-      ref={magneticHandlers.ref as RefObject<HTMLAnchorElement>}
-      className={`group relative inline-flex h-14 items-center justify-center overflow-hidden rounded-pill bg-shutter px-10 text-body font-medium text-paper transition-transform duration-200 active:scale-[0.97] focus-visible:focus-ring md:h-16 md:px-12 md:text-lead ${className}`}
-      onMouseMove={(event) => {
+      ref={magneticHandlers.ref}
+      tone={null}
+      underline={false}
+      className={variantClass}
+      onMouseEnter={(event: MouseEvent<HTMLAnchorElement>) => {
+        magneticHandlers.onMouseEnter();
+        onMouseEnter?.(event);
+      }}
+      onMouseMove={(event: MouseEvent<HTMLAnchorElement>) => {
         magneticHandlers.onMouseMove(event);
         onMouseMove?.(event);
       }}
-      onMouseLeave={(event) => {
+      onMouseLeave={(event: MouseEvent<HTMLAnchorElement>) => {
         magneticHandlers.onMouseLeave();
         onMouseLeave?.(event);
       }}
       {...props}
     >
-      <span className="relative block h-[1.5em] overflow-hidden">
-        <span className="block transition-transform duration-300 ease-out group-hover:-translate-y-full">
-          {children}
-        </span>
-        <span
-          aria-hidden="true"
-          className="absolute inset-x-0 top-full block transition-transform duration-300 ease-out group-hover:-translate-y-full"
-        >
-          {children}
-        </span>
-      </span>
+      <RollLabel>{children}</RollLabel>
     </Link>
   );
 }

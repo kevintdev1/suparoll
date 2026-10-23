@@ -4,11 +4,7 @@ import Image from "next/image";
 import { useRef } from "react";
 import { getDebugMotion } from "@/shared/lib/motion/debug";
 import { gsap, useGSAP } from "@/shared/lib/motion/gsap";
-import {
-  MOTION_DESKTOP,
-  MOTION_MOBILE,
-  MOTION_REDUCED,
-} from "@/shared/lib/motion/media";
+import { MOTION_OK, MOTION_REDUCED } from "@/shared/lib/motion/media";
 import { dur, ease } from "@/shared/lib/motion/tokens";
 
 type RevealImageProps = {
@@ -16,7 +12,8 @@ type RevealImageProps = {
   alt: string;
   width: number;
   height: number;
-  priority?: boolean;
+  sizes?: string;
+  preload?: boolean;
   className?: string;
   trigger?: "scroll" | "mount";
   scrollStart?: string;
@@ -27,7 +24,8 @@ export function RevealImage({
   alt,
   width,
   height,
-  priority = false,
+  sizes,
+  preload = false,
   className,
   trigger = "scroll",
   scrollStart = "top 80%",
@@ -100,15 +98,7 @@ export function RevealImage({
 
       const mm = gsap.matchMedia();
 
-      mm.add(MOTION_DESKTOP, () => {
-        const tween = animateReveal();
-
-        return () => {
-          tween.kill();
-        };
-      });
-
-      mm.add(MOTION_MOBILE, () => {
+      mm.add(MOTION_OK, () => {
         const tween = animateReveal();
 
         return () => {
@@ -139,8 +129,9 @@ export function RevealImage({
             alt={alt}
             width={width}
             height={height}
-            priority={priority}
-            className="h-full w-full object-cover"
+            sizes={sizes}
+            preload={preload}
+            className="size-full object-cover"
           />
         </div>
       </div>
