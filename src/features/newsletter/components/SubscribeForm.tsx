@@ -14,32 +14,34 @@ export function SubscribeForm() {
     <form
       onSubmit={onSubmit}
       noValidate
-      className="mt-6 flex max-w-md flex-col gap-4 sm:flex-row sm:items-end"
+      className="mt-6 flex max-w-md flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end"
       data-native-cursor
     >
       <div className="flex-1">
         <InputField
-          label="Correo electrónico"
-          labelClassName="text-paper/50"
+          label={microcopy.newsletterLabel}
+          tone="inverse"
           type="email"
           autoComplete="email"
           placeholder={microcopy.newsletterPlaceholder}
           error={errors.email?.message}
-          className="border-paper/20 bg-ink text-paper placeholder:text-paper/40"
           {...register("email")}
         />
       </div>
       <Button
         type="submit"
         variant="secondary"
+        tone="inverse"
         loading={isSubmitting}
         disabled={submitted}
-        className="border-paper/30 bg-transparent text-paper hover:bg-paper hover:text-ink"
       >
-        {submitted ? microcopy.newsletterSuccess : microcopy.newsletterSubmit}
+        {microcopy.newsletterSubmit}
       </Button>
+      <output className="text-small text-paper sm:basis-full">
+        {submitted ? microcopy.newsletterSuccess : null}
+      </output>
       {errors.root ? (
-        <p role="alert" className="text-small text-shutter sm:basis-full">
+        <p role="alert" className="text-small text-paper sm:basis-full">
           {errors.root.message}
         </p>
       ) : null}

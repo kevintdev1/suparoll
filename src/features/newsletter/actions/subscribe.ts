@@ -10,7 +10,6 @@ export async function subscribe(input: unknown): Promise<ActionResult> {
     return { ok: false, error: "Revisa los datos del formulario." };
   }
 
-  // Modo demostración — sin servicio real conectado (ver docs/pendientes.md copy-013)
   await new Promise((resolve) => setTimeout(resolve, 600));
 
   return { ok: true };
